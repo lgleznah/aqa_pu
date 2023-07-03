@@ -22,13 +22,13 @@ def main():
     # Create partitions
     X_train, X_test, y_train, y_test = build_pu_data(
         positive_features, unlabeled_features,
-        frac=0.01,
+        frac=0.1,
         known_positive_frac=0.5,
         positive_frac_in_unlabeled=0.5,
         test_split=0.2
     )
 
-    print(X_train, X_test, y_train, y_test)
+    print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
 
 if __name__ == "__main__":
     main()

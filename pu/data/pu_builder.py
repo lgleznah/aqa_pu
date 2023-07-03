@@ -28,24 +28,24 @@ def build_pu_data(positive_data, unlabeled_data, frac, known_positive_frac, posi
     true_unlabeled_amount = unlabeled_amount - positive_in_unlabeled_amount
 
     # Build test split from positive images
-    X_test_idxs = rng.integers(len(positive_data), size=test_amount)
+    X_test_idxs = rng.choice(len(positive_data), size=test_amount, replace=False)
     X_test = positive_data[X_test_idxs]
     remaining_positive = np.delete(positive_data, X_test_idxs, axis=0)
 
     # Build training split from both positive and unlabeled images
-    X_train_positive_idxs = rng.integers(len(remaining_positive), size=known_positive_amount)
+    X_train_positive_idxs = rng.choice(len(remaining_positive), size=known_positive_amount, replace=False)
     X_train_positive = remaining_positive[X_train_positive_idxs]
     remaining_positive = np.delete(remaining_positive, X_train_positive_idxs, axis=0)
 
-    X_train_unlabeled_positive_idxs = rng.integers(len(remaining_positive), size=positive_in_unlabeled_amount)
+    X_train_unlabeled_positive_idxs = rng.choice(len(remaining_positive), size=positive_in_unlabeled_amount, replace=False)
     X_train_unlabeled_positive = remaining_positive[X_train_unlabeled_positive_idxs, :]
     remaining_positive = np.delete(remaining_positive, X_train_unlabeled_positive_idxs, axis=0)
 
-    X_train_unlabeled_idxs = rng.integers(len(unlabeled_data), size=true_unlabeled_amount)
+    X_train_unlabeled_idxs = rng.choice(len(unlabeled_data), size=true_unlabeled_amount, replace=False)
     X_train_unlabeled = unlabeled_data[X_train_unlabeled_idxs]
 
     X_train = np.concatenate([X_train_positive, X_train_unlabeled_positive, X_train_unlabeled])
-    y_train = np.concatenate([np.ones(len(X_train_unlabeled)), np.zeros(len(X_train_unlabeled_positive) + len(X_train_unlabeled))])
+    y_train = np.concatenate([np.ones(len(X_train_positive)), np.zeros(len(X_train_unlabeled_positive) + len(X_train_unlabeled))])
 
     y_test = np.ones(len(X_test))
 

@@ -12,9 +12,7 @@ except:
 try:
     import tensorflow as tf
     from tensorflow.keras import layers
-    import sys
-    sys.path.append('../datasets')
-    from data.dataset_gen import paths_to_dataset
+    from pu.data.dataset_gen import paths_to_dataset
 except:
     pass
 
