@@ -62,7 +62,7 @@ class TwoStepAlgorithm(PUAlgorithm):
         self.stop_criterion = stop_criterion
         self.rng = np.random.default_rng(random_state)
 
-    def fit(self, X, y, validation):
+    def fit(self, X, y, X_val, y_val):
         '''
         Fit given data to perform prediction
 
@@ -77,9 +77,11 @@ class TwoStepAlgorithm(PUAlgorithm):
         y: a numpy array with shape (num_examples), with the labels. They can be 'P' (for positive data),
            or 'U' (for unlabeled data).
 
-        validation: a numpy array with shape (num_validation_examples, example_size), with the validation
-                    examples. All these are assumed to be positive, and are used to give estimates of
-                    accuracy or F1 scores.
+        X_val: a numpy array with shape (num_validation_examples, example_size), with the validation
+                    examples.
+
+        y_val: a numpy array with shape (num_examples), with the validation labels. They can be 'P' (for positive data),
+           or 'U' (for unlabeled data).
 
         Returns
         -------
@@ -90,12 +92,12 @@ class TwoStepAlgorithm(PUAlgorithm):
 
         negatives, unlabeled = self.negative_detector.detect_negatives(X_positive, X_unlabeled)
 
-        self._fit(X_positive, negatives, unlabeled, validation)
+        self._fit(X_positive, negatives, unlabeled, X_val, y_val)
 
         return self
 
     @abstractmethod
-    def _fit(self, positive, negative, unlabeled, validation):
+    def _fit(self, positive, negative, unlabeled, X_val, y_val):
         '''
         Internal method for fitting a model to PU-data
 
@@ -111,8 +113,11 @@ class TwoStepAlgorithm(PUAlgorithm):
 
         unlabeled: a numpy array with shape (num_unlabeled, example_size), with the unlabeled examples
 
-        validation: a numpy array with shape (num_validation_examples, example_size), with the
-                    validation examples
+        X_val: a numpy array with shape (num_validation_examples, example_size), with the validation
+                    examples.
+
+        y_val: a numpy array with shape (num_examples), with the validation labels. They can be 'P' (for positive data),
+           or 'U' (for unlabeled data).
         '''
         pass
 
@@ -127,6 +132,11 @@ class IterativeClassifierAlgorithm(TwoStepAlgorithm):
 
     Parameters
     ----------
+    negative_detector: algorithm to use for the first step, reliable negative examples detection.
+
+    stop_criterion: method to employ to decide whether to stop or not the iterations of the 
+                    second step. Implements the optional, third step.
+
     classifier_class: Scikit-learn class of the classifier to employ
 
     frac_to_move: fraction of unlabeled examples to move to the reliable negatives set
@@ -134,9 +144,13 @@ class IterativeClassifierAlgorithm(TwoStepAlgorithm):
     max_iterations_ maximum number of iterations to apply
 
     classifier_args and classifier_kwargs: arguments to pass to classifier_class constructor
+
+    random_state: random seed to use for the algorithms that require it.
     '''
 
-    def __init__(self, classifier_class, frac_to_move=0.01, max_iterations=100, classifier_args=[], classifier_kwargs={}):
+    def __init__(self, negative_detector, stop_criterion, classifier_class, frac_to_move=0.01, max_iterations=100, classifier_args=[], classifier_kwargs={}, random_state=1234):
+        super().__init__(negative_detector, stop_criterion, random_state)
+
         self.classifier_class = classifier_class
         self.frac_to_move = frac_to_move
         self.max_iterations = max_iterations
@@ -163,7 +177,7 @@ class IterativeClassifierAlgorithm(TwoStepAlgorithm):
                     validation examples
         '''
         
-        for i in range(self.max_iterations):
+        for _ in range(self.max_iterations):
             classifier = self.classifier_class(self.classifier_args, self.classifier_kwargs)
 
             X_train = np.concatenate(positive, negative)

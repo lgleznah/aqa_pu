@@ -23,11 +23,30 @@ def chunkify(l, n):
         yield l[i:i + n]
 
 class Extractor(ABC):
+    '''
+    Feature extraction algorithms
+
+    This is the superclass of all feature extraction algorithms. These take an image dataset as input,
+    and return lower-dimensional features which serve as the input of the PU algorithms.
+    '''
 
     def __init__(self) -> None:
         self.project_root = os.environ['AQA_PU_ROOT']
 
     def extract_features(self, positive_images, unlabeled_images):
+        '''
+        Extract features from images
+
+        This method acts as a wrapper for _extract_features, which is the method that extracts features
+        from the images. This wrapper offers checkpointing functionality, avoiding having to run
+        the actual feature extraction algorithm twice.
+
+        Parameters
+        ----------
+        positive_images: list of paths to positive images
+        unlabeled_images: list of paths to unlabeled images
+        '''
+
         features_file = os.path.join(self.project_root, 'embeddings', f'{self.filename}_{self.nfeatures}f.csv')
 
         if os.path.exists(features_file):
@@ -43,7 +62,7 @@ class Extractor(ABC):
             df = pd.DataFrame.from_dict({
                 'id': np.concatenate([positive_images, unlabeled_images]),
                 **{f'f{i}': all_features[:,i] for i, _ in enumerate(all_features.T)},
-                'label': (['P'] * len(positive_images)) + (['U'] * len(unlabeled_images))
+                'label': ([1] * len(positive_images)) + ([0] * len(unlabeled_images))
                 })
             
             df.to_pickle(features_file, compression='gzip')
@@ -55,6 +74,18 @@ class Extractor(ABC):
 
 
 class AutoencoderExtractor(Extractor):
+    '''
+    Autoencoder-based feature extraction
+
+    This feature extractor trains an autoencoder on the positive and unlabeled images,
+    keeping the outputs of the encoder as features.
+
+    Parameters
+    ----------
+    input_shape: input image size
+    filters: size of the convolutional filters to employ
+    epochs: for how many epochs the autoencoder should be trained
+    '''
 
     def __init__(self, input_shape, filters, epochs=10) -> None:
         super().__init__()
@@ -80,6 +111,11 @@ class AutoencoderExtractor(Extractor):
 
 
     def _extract_features(self, positive_images, unlabeled_images):
+        '''
+        Use the autoencoder to extract features
+
+        Train the autoencoder, and return the outputs of the encoder
+        '''
         positive_dataset = paths_to_dataset(positive_images, self.input_shape[:2])
         unlabeled_dataset = paths_to_dataset(unlabeled_images, self.input_shape[:2])
         full_dataset = positive_dataset.concatenate(unlabeled_dataset)
@@ -96,6 +132,16 @@ class AutoencoderExtractor(Extractor):
     
 
 class ViTExtractor(Extractor):
+    '''
+    ViT-based feature extractor
+
+    This feature extractor employs a pretrained vision transformer to extract the
+    features of the images, using its output as features.
+
+    Parameters
+    ----------
+    extractor_name: name of the ViT to employ, as specified by the SentenceTransformers library
+    '''
 
     def __init__(self, extractor_name='clip-ViT-B-32') -> None:
         super().__init__()
@@ -105,6 +151,9 @@ class ViTExtractor(Extractor):
         self.nfeatures = self.extractor.encode('john madden aeiou').shape[0]
 
     def _extract_features(self, positive_images, unlabeled_images):
+        '''
+        Use the ViT to extract features
+        '''
 
         chunks_positive = list(chunkify(positive_images, 900))
 

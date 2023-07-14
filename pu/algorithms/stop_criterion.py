@@ -2,9 +2,11 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 from sklearn.metrics import accuracy_score
+from pu.metrics import f1_pu
 
 metrics_dict = {
-    'accuracy': accuracy_score
+    'accuracy': accuracy_score,
+    'f1': f1_pu
 }
 
 class StopCriterion(ABC):

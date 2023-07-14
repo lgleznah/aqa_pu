@@ -41,8 +41,7 @@ class NaiveDetector(NegativeDetector):
                            and the remaining examples, respectively.
     '''
 
-    def __init__(self, frac, random_state):
-        super().__init__()
+    def __init__(self, frac, random_state=1234):
         self.rng = np.random.default_rng(random_state)
         self.frac = frac
 
