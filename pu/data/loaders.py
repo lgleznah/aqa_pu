@@ -64,21 +64,23 @@ class SingleCSVWithTestLoader(Loader):
 
     def load_data(self):
         df = pd.read_csv(self.file)
-        df_positive = df.apply(self.positive_fn, axis=1)
-        df_negative = df.apply(negate(self.positive_fn), axis=1)
+        df_positive = df[df.apply(self.positive_fn, axis=1)]
+        df_negative = df[df.apply(negate(self.positive_fn), axis=1)]
 
-        test_positive_idxs = self.rng.choice(len(df_positive), size=self.test_frac * len(df_positive), replace=False)
-        test_negative_idxs = self.rng.choice(len(df_negative), size=self.test_frac * len(df_negative), replace=False)
+        test_positive_idxs = self.rng.choice(len(df_positive), size=int(self.test_frac * len(df_positive)), replace=False)
+        test_negative_idxs = self.rng.choice(len(df_negative), size=int(self.test_frac * len(df_negative)), replace=False)
 
         df_test_positive = df_positive.iloc[test_positive_idxs]
         df_test_negative = df_negative.iloc[test_negative_idxs]
 
-        df_positive = df_positive[~df_positive.index.isin(test_positive_idxs)]
-        df_negative = df_negative[~df_negative.index.isin(test_negative_idxs)]
+        df_positive = df_positive.reset_index(drop=True)
+        df_negative = df_negative.reset_index(drop=True)
+        df_positive = df_positive.drop(test_positive_idxs)
+        df_negative = df_negative.drop(test_negative_idxs)
         df = pd.concat([df_positive, df_negative])
 
-        df_train_positive = df.apply(self.reliable_positive_fn, axis=1)
-        df_train_unlabeled = df.apply(negate(self.reliable_positive_fn), axis=1)
+        df_train_positive = df[df.apply(self.reliable_positive_fn, axis=1)]
+        df_train_unlabeled = df[df.apply(negate(self.reliable_positive_fn), axis=1)]
 
         paths_train_positive = df_train_positive[[self.path_col]].squeeze().apply(lambda path: os.path.join(self.img_root, path)).to_numpy()
         paths_train_unlabeled = df_train_unlabeled[[self.path_col]].squeeze().apply(lambda path: os.path.join(self.img_root, path)).to_numpy()
