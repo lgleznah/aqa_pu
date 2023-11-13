@@ -51,8 +51,8 @@ class Extractor(ABC):
 
         if os.path.exists(features_file):
             features = pd.read_pickle(features_file, compression='gzip')
-            positive_features = features[features['label'] == 'P']
-            unlabeled_features = features[features['label'] == 'U']
+            positive_features = features[features['label'] == 1]
+            unlabeled_features = features[features['label'] == 0]
 
             return (positive_features, unlabeled_features)
 
@@ -66,7 +66,7 @@ class Extractor(ABC):
                 })
             
             df.to_pickle(features_file, compression='gzip')
-            return (positive_features, unlabeled_features)
+            return (df[df['label'] == 1], df[df['label'] == 0])
 
     @abstractmethod
     def _extract_features(self, positive_images, unlabeled_images):

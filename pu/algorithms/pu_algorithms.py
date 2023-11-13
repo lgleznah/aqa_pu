@@ -14,7 +14,7 @@ class PUAlgorithm(ABC):
     '''
 
     @abstractmethod
-    def fit(self, X, y, validation):
+    def fit(self, X, y, X_val, y_val):
         '''
         Fit given data to perform prediction.
 
@@ -28,9 +28,11 @@ class PUAlgorithm(ABC):
         y: a numpy array with shape (num_examples), with the labels. They can be 'P' (for positive data),
            or 'U' (for unlabeled data).
 
-        validation: a numpy array with shape (num_validation_examples, example_size), with the validation
-                    examples. All these are assumed to be positive, and are used to give estimates of
-                    accuracy or F1 scores.
+        X_val: a numpy array with shape (num_validation_examples, example_size), with the validation
+                    examples.
+
+        y_val: a numpy array with shape (num_examples), with the validation labels. They can be 'P' (for positive data),
+           or 'U' (for unlabeled data).
 
         Returns
         -------
@@ -87,8 +89,8 @@ class TwoStepAlgorithm(PUAlgorithm):
         -------
         self: this same object
         '''
-        X_positive = X[y == 'P']
-        X_unlabeled = X[y == 'U']
+        X_positive = X[y == 1]
+        X_unlabeled = X[y == 0]
 
         negatives, unlabeled = self.negative_detector.detect_negatives(X_positive, X_unlabeled)
 
@@ -158,7 +160,7 @@ class IterativeClassifierAlgorithm(TwoStepAlgorithm):
         self.classifier_kwargs = classifier_kwargs
         self.validation_results = []
 
-    def _fit(self, positive, negative, unlabeled, validation):
+    def _fit(self, positive, negative, unlabeled, X_val, y_val):
         '''
         Internal method for fitting to PU data
 
@@ -173,31 +175,34 @@ class IterativeClassifierAlgorithm(TwoStepAlgorithm):
 
         unlabeled: a numpy array with shape (num_unlabeled, example_size), with the unlabeled examples
 
-        validation: a numpy array with shape (num_validation_examples, example_size), with the
-                    validation examples
+        X_val: a numpy array with shape (num_validation_examples, example_size), with the validation
+                    examples.
+
+        y_val: a numpy array with shape (num_examples), with the validation labels. They can be 'P' (for positive data),
+           or 'U' (for unlabeled data).
         '''
         
         for _ in range(self.max_iterations):
-            classifier = self.classifier_class(self.classifier_args, self.classifier_kwargs)
+            classifier = self.classifier_class(*self.classifier_args, **self.classifier_kwargs)
 
-            X_train = np.concatenate(positive, negative)
-            y_train = np.concatenate(np.ones(len(positive)), np.zeros(len(negative)))
+            X_train = np.concatenate([positive, negative])
+            y_train = np.concatenate([np.ones(len(positive)), np.zeros(len(negative))])
 
             shuffle_idxs = self.rng.permutation(X_train.shape[0])
             X_train = X_train[shuffle_idxs]
             y_train = y_train[shuffle_idxs]
             classifier.fit(X_train, y_train)
 
-            should_stop, val_metric = self.stop_criterion(classifier, validation)
+            should_stop, val_metric = self.stop_criterion.check_stop(classifier, X_val, y_val)
             self.validation_results.append(val_metric)
             if (should_stop):
                 self.classifier = classifier
                 break
 
             else:
-                unlabeled_probas = classifier.predict_proba(unlabeled)
+                unlabeled_probas = classifier.predict(unlabeled)
                 sorted_idxs = np.argsort(unlabeled_probas)
-                amount_to_move = len(unlabeled) * self.frac_to_move
+                amount_to_move = int(len(unlabeled) * self.frac_to_move)
                 idxs_to_move = sorted_idxs[:amount_to_move]
                 negative = np.concatenate([negative, unlabeled[idxs_to_move]], axis=0)
                 unlabeled = np.delete(unlabeled, idxs_to_move, axis=0)

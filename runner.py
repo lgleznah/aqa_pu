@@ -38,10 +38,13 @@ def main():
     iterative_cls = IterativeClassifierAlgorithm(
         negative_detector=NaiveDetector(frac=0.1),
         stop_criterion=StopOnMetricDrop('f1'),
-        classifier_class=svm.SVC
+        classifier_class=svm.SVC,
+        max_iterations=10
     )
 
-    iterative_cls.fit(X_train, y_train)
+    iterative_cls.fit(X_train, y_train, X_test, y_test)
+
+    print(f'Evolution of f1 score: {iterative_cls.validation_results}')
 
 if __name__ == "__main__":
     main()

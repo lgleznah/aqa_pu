@@ -18,7 +18,7 @@ class StopCriterion(ABC):
     '''
 
     @abstractmethod
-    def check_stop(self, classifier, validation_data):
+    def check_stop(self, classifier, validation_data, validation_labels):
         '''
         Check if a two-step PU algorithm should stop
 
@@ -27,6 +27,8 @@ class StopCriterion(ABC):
         classifier: specific classifier to employ for the algorithm.
 
         validation_data: data upon which to validate the performance of the PU algorithm
+
+        validation_labels: validation data labels. They can be 1 (positive) or 0 (unlabeled)
         '''
         pass
 
@@ -46,7 +48,7 @@ class StopOnMetricDrop(StopCriterion):
         self.metric = metrics_dict[metric_name]
         self.last_metric_value = float('-inf')
 
-    def check_stop(self, classifier, validation_data):
+    def check_stop(self, classifier, validation_data, validation_labels):
         '''
         Stop execution of the two-step PU algorithm if the given metric doesn't improve.
 
@@ -58,7 +60,7 @@ class StopOnMetricDrop(StopCriterion):
         '''
         predictions = classifier.predict(validation_data)
 
-        score = self.metric(np.ones(len(predictions)), predictions)
+        score = self.metric(validation_labels, predictions)
         if (score < self.last_metric_value):
             return True, score
         
@@ -72,5 +74,5 @@ class NonStop(StopCriterion):
     Naïve stop criterion. Never stops.
     '''
 
-    def check_stop(self, classifier, validation_data):
+    def check_stop(self, classifier, validation_data, validation_labels):
         return False
