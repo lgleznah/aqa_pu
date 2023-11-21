@@ -2,11 +2,12 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 from sklearn.metrics import accuracy_score
-from pu.metrics import f1_pu
+from pu.metrics import f1_pu, aul_pu
 
 metrics_dict = {
     'accuracy': accuracy_score,
-    'f1': f1_pu
+    'f1': f1_pu,
+    'aul': aul_pu
 }
 
 class StopCriterion(ABC):
@@ -71,8 +72,16 @@ class StopOnMetricDrop(StopCriterion):
         
 class NonStop(StopCriterion):
     '''
-    Naïve stop criterion. Never stops.
+    Naïve stop criterion. Never stops, but reports metric results
+
+    Parameters
+    ----------
+    metric_name: the name of the metric to track.
     '''
+    def __init__(self, metric_name):
+        self.metric = metrics_dict[metric_name]
 
     def check_stop(self, classifier, validation_data, validation_labels):
-        return False
+        predictions = classifier.predict(validation_data)
+        score = self.metric(validation_labels, predictions)
+        return False, score

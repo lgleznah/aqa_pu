@@ -28,12 +28,17 @@ class Extractor(ABC):
 
     This is the superclass of all feature extraction algorithms. These take an image dataset as input,
     and return lower-dimensional features which serve as the input of the PU algorithms.
+
+    Parameters
+    ----------
+    experiment_name: name of the experiment (to use the same parameters for multiple datasets)
     '''
 
-    def __init__(self) -> None:
+    def __init__(self, experiment_name) -> None:
         self.project_root = os.environ['AQA_PU_ROOT']
+        self.experiment_name = experiment_name
 
-    def extract_features(self, positive_images, unlabeled_images):
+    def extract_features(self, positive_images, unlabeled_images, use_cache=True):
         '''
         Extract features from images
 
@@ -45,11 +50,12 @@ class Extractor(ABC):
         ----------
         positive_images: list of paths to positive images
         unlabeled_images: list of paths to unlabeled images
+        use_cache: whether to reuse or save the features from or into a cache file
         '''
 
-        features_file = os.path.join(self.project_root, 'embeddings', f'{self.filename}_{self.nfeatures}f.csv')
+        features_file = os.path.join(self.project_root, 'embeddings', f'{self.experiment_name}_{self.filename}_{self.nfeatures}f.csv')
 
-        if os.path.exists(features_file):
+        if use_cache and os.path.exists(features_file):
             features = pd.read_pickle(features_file, compression='gzip')
             positive_features = features[features['label'] == 1]
             unlabeled_features = features[features['label'] == 0]
@@ -65,7 +71,9 @@ class Extractor(ABC):
                 'label': ([1] * len(positive_images)) + ([0] * len(unlabeled_images))
                 })
             
-            df.to_pickle(features_file, compression='gzip')
+            if use_cache:
+                df.to_pickle(features_file, compression='gzip')
+                
             return (df[df['label'] == 1], df[df['label'] == 0])
 
     @abstractmethod
@@ -82,13 +90,14 @@ class AutoencoderExtractor(Extractor):
 
     Parameters
     ----------
+    experiment_name: name of the experiment (to use the same parameters for multiple datasets)
     input_shape: input image size
     filters: size of the convolutional filters to employ
     epochs: for how many epochs the autoencoder should be trained
     '''
 
-    def __init__(self, input_shape, filters, epochs=10) -> None:
-        super().__init__()
+    def __init__(self, experiment_name, input_shape, filters, epochs=10) -> None:
+        super().__init__(experiment_name)
 
         self.encoder = tf.keras.Sequential()
         self.decoder = tf.keras.Sequential()
@@ -140,11 +149,12 @@ class ViTExtractor(Extractor):
 
     Parameters
     ----------
+    experiment_name: name of the experiment (to use the same parameters for multiple datasets)
     extractor_name: name of the ViT to employ, as specified by the SentenceTransformers library
     '''
 
-    def __init__(self, extractor_name='clip-ViT-B-32') -> None:
-        super().__init__()
+    def __init__(self, experiment_name, extractor_name='clip-ViT-B-32') -> None:
+        super().__init__(experiment_name)
 
         self.extractor = SentenceTransformer(extractor_name)
         self.filename = f'vit_name_{extractor_name}'
