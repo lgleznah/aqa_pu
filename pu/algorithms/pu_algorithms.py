@@ -125,22 +125,26 @@ class ProbTagging(PUAlgorithm):
         y_val: validation labels (unused in this algorithm)
         '''
         # Compute credibility scores using k-nearest neighbours
-        nbrs = NearestNeighbors(n_neighbors=self.knn_num_samples).fit(X)
+        nbrs = NearestNeighbors(n_neighbors=self.knn_num_samples, n_jobs=-1).fit(X)
         _, indices = nbrs.kneighbors(X)
-        unlabeled_samples = (y == 'U')
+        unlabeled_samples = (y == 0)
         unlabeled_knn_indices = indices[unlabeled_samples]
-        indices_labels = np.vectorize(lambda x: 0 if y[x] == 'U' else 1)(unlabeled_knn_indices)
+        indices_labels = np.vectorize(lambda x: y[x])(unlabeled_knn_indices)
         credibility_scores = np.mean(indices_labels, axis=1)
+        print(credibility_scores, np.max(credibility_scores), np.min(credibility_scores), np.mean(credibility_scores))
 
         # Get "num_classifiers" datasets and train a model on each one of them
         self.classifiers = []
         X_dataset = X[unlabeled_samples]
         for i in range(self.num_classifiers):
             self.print_verbose(f'Training classifier #{i}')
-            y_dataset = 2 * (self.rng.uniform(size=credibility_scores) < credibility_scores) - 1
-            classifier = self.classifier_class(self.classifier_args, self.classifier_kwargs)
+            y_dataset = (self.rng.uniform(size=len(credibility_scores)) < credibility_scores).astype(int)
+            self.print_verbose(f'Positives: {np.sum(y_dataset)} // Negatives: {len(y_dataset) - np.sum(y_dataset)}')
+            classifier = self.classifier_class(*self.classifier_args, **self.classifier_kwargs)
             classifier.fit(X_dataset, y_dataset)
             self.classifiers.append(classifier)
+
+        self.class_prior = np.sum(y == 1) / len(y)
 
 
     def predict(self, X):
@@ -153,7 +157,7 @@ class ProbTagging(PUAlgorithm):
         X: the examples to get the predictions for
         '''
         predictions = [classifier.predict(X) for classifier in self.classifiers]
-        return np.mean(predictions, axis=0)
+        return (np.mean(predictions, axis=0) > self.class_prior).astype(int)
     
     def predict_proba(self, X):
         '''
@@ -164,8 +168,8 @@ class ProbTagging(PUAlgorithm):
         ----------
         X: the examples to get the probabilities for
         '''
-        predictions = [classifier.predict_proba(X) for classifier in self.classifiers]
-        return np.mean(predictions, axis=0) > 0.5
+        predictions = [classifier.predict_proba(X)[:,1] for classifier in self.classifiers]
+        return np.mean(predictions, axis=0)
     
 class TwoStepAlgorithm(PUAlgorithm):
     '''
