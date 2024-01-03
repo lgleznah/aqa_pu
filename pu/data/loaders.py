@@ -26,17 +26,16 @@ class Loader(ABC):
 
 
 class CSVLoader(Loader):
+    '''
+    This class loads a full CSV, returning the paths of the images contained therein.
 
+    Parameters
+    ----------
+    file: CSV file with the paths
+    path_col: name of the CSV column with the paths
+    img_root: root folder containing all the images of this dataset
+    '''
     def __init__(self, file, path_col, img_root):
-        '''
-        This class loads a full CSV, returning the paths of the images contained therein.
-
-        Parameters
-        ----------
-        file: CSV file with the paths
-        path_col: name of the CSV column with the paths
-        img_root: root folder containing all the images of this dataset
-        '''
         self.file = file
         self.img_root = img_root
         self.path_col = path_col
@@ -47,9 +46,31 @@ class CSVLoader(Loader):
         paths = df[[self.path_col]].squeeze().apply(lambda path: os.path.join(self.img_root, path)).to_numpy()
         return paths
     
-class SingleCSVLoader(Loader):
-    cccccc
 
+class FullCSVLoader(Loader):
+    def __init__(self, file, path_col, img_root):
+        self.file = file
+        self.img_root = img_root
+        self.path_col = path_col
+
+    def load_data(self):
+        df = pd.read_csv(self.file)
+
+        df[self.path_col] = df[self.path_col].squeeze().apply(lambda path: os.path.join(self.img_root, path))
+        return df
+
+class SingleCSVLoader(Loader):
+    '''
+    This class loads a full CSV, with both positive and unlabeled examples. Examples are classified
+    according to a function.
+
+    Parameters
+    ----------
+    file: CSV file with the paths
+    path_col: name of the CSV column with the paths
+    img_root: root folder containing all the images of this dataset
+    positive_fn: bool function that determines if an example is positive (True) or unlabeled (False)
+    '''
     def __init__(self, file, path_col, img_root, positive_fn):
         self.file = file
         self.img_root = img_root
@@ -94,8 +115,8 @@ class SingleCSVWithTestLoader(Loader):
 
     def load_data(self):
         df = pd.read_csv(self.file)
-        df_positive = df[df.apply(self.positive_fn, axis=1)]
-        df_negative = df[df.apply(negate(self.positive_fn), axis=1)]
+        df_positive = df[df.apply(lambda x: self.positive_fn(x, df), axis=1)]
+        df_negative = df[df.apply(negate(lambda x: self.positive_fn(x, df)), axis=1)]
 
         test_positive_idxs = self.rng.choice(len(df_positive), size=int(self.test_frac * len(df_positive)), replace=False)
         test_negative_idxs = self.rng.choice(len(df_negative), size=int(self.test_frac * len(df_negative)), replace=False)
@@ -109,8 +130,8 @@ class SingleCSVWithTestLoader(Loader):
         df_negative = df_negative.drop(test_negative_idxs)
         df = pd.concat([df_positive, df_negative])
 
-        df_train_positive = df[df.apply(self.reliable_positive_fn, axis=1)]
-        df_train_unlabeled = df[df.apply(negate(self.reliable_positive_fn), axis=1)]
+        df_train_positive = df[df.apply(lambda x: self.reliable_positive_fn(x, df), axis=1)]
+        df_train_unlabeled = df[df.apply(negate(lambda x: self.reliable_positive_fn(x, df)), axis=1)]
 
         paths_train_positive = df_train_positive[[self.path_col]].squeeze().apply(lambda path: os.path.join(self.img_root, path)).to_numpy()
         paths_train_unlabeled = df_train_unlabeled[[self.path_col]].squeeze().apply(lambda path: os.path.join(self.img_root, path)).to_numpy()

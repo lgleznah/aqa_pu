@@ -12,8 +12,8 @@ def image_parser_generator(input_shape):
     
     return parse_image
 
-def paths_to_dataset(image_paths, image_shape):
+def paths_to_dataset(image_paths, image_shape, batch_size):
     image_parser = image_parser_generator(image_shape)
-    dataset = tf.data.Dataset.from_tensor_slices((image_paths,)).map(image_parser).batch(64).prefetch(-1)
+    dataset = tf.data.Dataset.from_tensor_slices((image_paths,)).map(image_parser).batch(batch_size).prefetch(-1)
 
     return dataset

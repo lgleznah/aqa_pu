@@ -38,7 +38,7 @@ class Extractor(ABC):
         self.project_root = os.environ['AQA_PU_ROOT']
         self.experiment_name = experiment_name
 
-    def extract_features(self, positive_images, unlabeled_images, use_cache=True):
+    def extract_features(self, images, use_cache=True):
         '''
         Extract features from images
 
@@ -48,8 +48,7 @@ class Extractor(ABC):
 
         Parameters
         ----------
-        positive_images: list of paths to positive images
-        unlabeled_images: list of paths to unlabeled images
+        images: list of paths to the images from which to extract the features
         use_cache: whether to reuse or save the features from or into a cache file
         '''
 
@@ -57,27 +56,23 @@ class Extractor(ABC):
 
         if use_cache and os.path.exists(features_file):
             features = pd.read_pickle(features_file, compression='gzip')
-            positive_features = features[features['label'] == 1]
-            unlabeled_features = features[features['label'] == 0]
 
-            return (positive_features, unlabeled_features)
+            return features
 
         else:
-            positive_features, unlabeled_features = self._extract_features(positive_images, unlabeled_images)
-            all_features = np.concatenate([positive_features, unlabeled_features])
+            features = self._extract_features(images)
             df = pd.DataFrame.from_dict({
-                'id': np.concatenate([positive_images, unlabeled_images]),
-                **{f'f{i}': all_features[:,i] for i, _ in enumerate(all_features.T)},
-                'label': ([1] * len(positive_images)) + ([0] * len(unlabeled_images))
+                'id': images,
+                **{f'__feature__{i}': features[:,i] for i, _ in enumerate(features.T)}
                 })
             
             if use_cache:
                 df.to_pickle(features_file, compression='gzip')
                 
-            return (df[df['label'] == 1], df[df['label'] == 0])
+            return df
 
     @abstractmethod
-    def _extract_features(self, positive_images, unlabeled_images):
+    def _extract_features(self, images):
         pass
 
 
@@ -119,25 +114,28 @@ class AutoencoderExtractor(Extractor):
         self.nfeatures = self.encoder.layers[-1].output_shape[-1] * self.encoder.layers[-1].output_shape[-2] * self.encoder.layers[-1].output_shape[-3]
 
 
-    def _extract_features(self, positive_images, unlabeled_images):
+    def _extract_features(self, images):
         '''
         Use the autoencoder to extract features
 
         Train the autoencoder, and return the outputs of the encoder
         '''
-        positive_dataset = paths_to_dataset(positive_images, self.input_shape[:2])
-        unlabeled_dataset = paths_to_dataset(unlabeled_images, self.input_shape[:2])
-        full_dataset = positive_dataset.concatenate(unlabeled_dataset)
+        dataset = paths_to_dataset(images, self.input_shape[:2], 64)
 
-        self.autoencoder.fit(full_dataset, epochs=self.epochs)
+        self.autoencoder.fit(dataset, epochs=self.epochs)
 
-        positive_features = self.encoder.predict(positive_dataset)
-        unlabeled_features = self.encoder.predict(unlabeled_dataset)
+        chunks = list(chunkify(images, 5000))
 
-        return (
-            tf.reshape(positive_features, [len(positive_images), -1]), 
-            tf.reshape(unlabeled_features, [len(unlabeled_images), -1])
-        )
+        features = []
+        for chunk in tqdm(chunks):
+            dataset = paths_to_dataset(chunk, self.input_shape[:2], 1)
+            result = self.encoder.predict(dataset)
+            result = np.reshape(result, (result.shape[0], -1))
+            features.append(result)
+
+        features = np.concatenate(features)
+
+        return features
     
 
 class ViTExtractor(Extractor):
@@ -160,24 +158,17 @@ class ViTExtractor(Extractor):
         self.filename = f'vit_name_{extractor_name}'
         self.nfeatures = self.extractor.encode('john madden aeiou').shape[0]
 
-    def _extract_features(self, positive_images, unlabeled_images):
+    def _extract_features(self, images):
         '''
         Use the ViT to extract features
         '''
 
-        chunks_positive = list(chunkify(positive_images, 900))
+        chunks_positive = list(chunkify(images, 900))
 
-        positive_features = []
+        features = []
         for chunk in tqdm(chunks_positive):
             images = [Image.open(img) for img in chunk]
-            positive_features.extend(self.extractor.encode(images, batch_size=32))
-
-        chunks_unlabeled = list(chunkify(unlabeled_images, 900))
-
-        unlabeled_features = []
-        for chunk in tqdm(chunks_unlabeled):
-            images = [Image.open(img) for img in chunk]
-            unlabeled_features.extend(self.extractor.encode(images, batch_size=32))
-
+            features.extend(self.extractor.encode(images, batch_size=32))
         
-        return (positive_features, unlabeled_features)
+        features = np.array(features)
+        return features
