@@ -1,7 +1,14 @@
 from abc import ABC, abstractmethod
+
 from sklearn.neighbors import NearestNeighbors
 
 import numpy as np
+
+try:
+    import tensorflow as tf
+    from pu.losses.pu_losses import create_nn_pu_loss
+except:
+    pass
 
 class PUAlgorithm(ABC):
     '''
@@ -80,6 +87,85 @@ class PUAlgorithm(ABC):
         if self.verbose:
             print(*args, **kwargs)
 
+class NonNegativePU(PUAlgorithm):
+    '''
+    Implements differentiable models that incorporate the loss function described in 
+    "Positive-Unlabeled Learning with Non-Negative Risk Estimator". These are specified by a base model,
+    , to which this loss function is applied. This model requires TensorFlow.
+
+    Parameters
+    ----------
+    model: base model for classifying features.
+    positive_prior: hand-calculated estimate of the positive class prior. It can be 'auto' for
+                    changing the estimate on each epoch, by using the positive rate in the 
+                    validation set
+    loss_fn: underlying loss function for the PU loss function.
+    compile_kwargs: keyword arguments for model.compile.
+    fit_kwargs: keyword arguments for model.fit
+    verbose: whether to print or not debug messages.
+    '''
+    def __init__(self, model, positive_prior, loss_fn, compile_kwargs, fit_kwargs, verbose=False):
+        super().__init__(verbose)
+
+        self.positive_prior = positive_prior
+
+        self.base_loss = loss_fn
+        self.loss_fn = create_nn_pu_loss(0.5 if positive_prior == 'auto' else positive_prior, loss_fn)
+        self.model = model
+
+        self.model.compile(loss=self.loss_fn, **compile_kwargs)
+        self.compile_kwargs = compile_kwargs
+        self.fit_kwargs = fit_kwargs
+        self.epochs = fit_kwargs['epochs']
+
+    def fit(self, X, y, X_val=None, y_val=None):
+        '''
+        Fits the non-negative risk estimator model to the given data. Can accept optional validation
+        data for training the underlying neural network model.
+
+        Parameters
+        ----------
+        X: numpy array with shape (num_examples, example_size), with the training features.
+        y: numpy array with shape (num_examples), with the labels. They can be 'P' (for positive data),
+           or 'U' (for unlabeled data).
+        X_val: validation features (optional in this algorithm)
+        y_val: validation labels (optional in this algorithm)
+        '''
+        val_data = None if X_val is None or y_val is None else (X_val, y_val)
+        if self.positive_prior != 'auto':
+            self.model.fit(X, y, validation_data = val_data, **self.fit_kwargs)
+
+        else:
+            # Change positive prior estimate if configured to do so
+            self.fit_kwargs.pop('epochs', None)
+            for i in range(self.epochs):
+                self.model.fit(X, y, validation_data = val_data, **self.fit_kwargs, epochs=1)
+                preds = self.predict(X_val)
+                new_prior = np.sum(preds) / preds.shape[0]
+                self.loss_fn = create_nn_pu_loss(new_prior, self.base_loss)
+                self.model.compile(loss=self.loss_fn, **self.compile_kwargs)
+                print(f'Epoch {i}: changing positive prior estimate to {new_prior}')
+
+    def predict(self, X):
+        '''
+        Get label predictions for a series of examples with the trained model.
+
+        Parameters
+        ----------
+        X: the examples to get the predictions for
+        '''
+        return (self.model.predict(X) > 0.5).astype(int)
+
+    def predict_proba(self, X):
+        '''
+        Get label probabilites for a series of examples with the trained model.
+
+        Parameters
+        ----------
+        X: the examples to get the probabilities for
+        '''
+        return self.model.predict(X)
+
 class ProbTagging(PUAlgorithm):
     '''
     Implements the ProbTagging PU-learning algorithm described in "Improving Positive Unlabeled Learning: 
@@ -96,7 +182,7 @@ class ProbTagging(PUAlgorithm):
     '''
     def __init__(self, knn_num_samples, classifier_class, num_classifiers, 
                  classifier_args=[], classifier_kwargs={}, 
-                 random_state=1234, verbose=False,):
+                 random_state=1234, verbose=False):
         
         super().__init__(verbose)
 

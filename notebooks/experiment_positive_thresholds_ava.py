@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Experiments by changing the threshold of reliable positives
+# # Experiments by changing the threshold of reliable positives (AVA dataset)
 
 # In[1]:
 
@@ -17,12 +17,13 @@ import numpy as np
 import pandas as pd
 import traceback
 import os
+import gc
 
 from pu.feature_extractors.extractors import ViTExtractor, AutoencoderExtractor
 from pu.data.loaders import CSVLoader, SingleCSVLoader, SingleCSVWithTestLoader, FullCSVLoader
 from pu.data.pu_builder import build_pu_data
 
-from pu.algorithms.pu_algorithms import IterativeClassifierAlgorithm, ProbTagging
+from pu.algorithms.pu_algorithms import IterativeClassifierAlgorithm, ProbTagging, NonNegativePU
 from pu.algorithms.negative_detectors import NaiveDetector, KNNDetector
 from pu.algorithms.stop_criterion import StopOnMetricDrop, NonStop
 
@@ -35,19 +36,12 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 
 # ## AVA dataset for positive and unlabeled examples
 
-# In[3]:
+# ### Iterative classifier
 
+# In[6]:
 
+'''
 def quantile_experiment(extractor, quantile):
-    '''ava_loader = FullCSVLoader(
-        '/srv/PU-dataset/unlabeled.csv',
-        'id',
-        '/srv/PU-dataset/dataset_unlabeled',
-        reliable_positive_fn=lambda row, df: row['VotesMean'] > quantile,
-        positive_fn=lambda row, df: row['VotesMean'] >= 5.0,
-        test_frac=0.2,
-        random_state=1234
-    )'''
     ava_loader = FullCSVLoader(
         '/srv/PU-dataset/unlabeled.csv',
         'id',
@@ -89,7 +83,9 @@ def quantile_experiment(extractor, quantile):
     return bal_acc, acc, f1
 
 
-# In[ ]:
+# #### Vit feature extractor (good)
+
+# In[7]:
 
 
 extractors = ['clip-ViT-B-32', 'clip-ViT-B-16', 'clip-ViT-L-14']
@@ -134,10 +130,12 @@ df = pd.DataFrame.from_dict({
     'f1': f1_col
 })
 
-df.to_csv('quantile_threshold_vit_results.csv')
+df.to_csv('quantile_threshold_vit_results_ava.csv')
 
 
-# In[ ]:
+# #### Autoencoder-based feature extractor (very bad)
+
+# In[4]:
 
 
 extractor_filters = [[8,16,16,32], [8,16,32,64,64], [8,16,32,64,64,128]]
@@ -186,6 +184,111 @@ for quantile in quantile_quantities:
         except Exception as e:
             print(f'Fail at {quantile}, {extractor}')
             print(traceback.format_exc())
+
+
+# ### Non-negative PU classifier
+
+# In[9]:
+'''
+
+import tensorflow as tf
+
+def quantile_experiment_nnpu(extractor, quantile):
+    ava_loader = FullCSVLoader(
+        '/srv/PU-dataset/unlabeled.csv',
+        'id',
+        '/srv/PU-dataset/dataset_unlabeled'
+    )
+    
+    ava_df = ava_loader.load_data()
+    features = extractor.extract_features(ava_df['id'])
+    ava_df = pd.concat([ava_df.drop(columns=['id']), features.drop(columns=['id'])], axis=1)
+
+    X_train, X_val, X_test, y_train, y_val, y_test = build_pu_data(
+        ava_df,
+        frac=1.0,
+        move_to_unlabeled_frac=0.5,
+        val_split=0.2,
+        val_split_positive='same',
+        reliable_positive_fn=lambda row, df: row['VotesMean'] > quantile,
+        positive_fn=lambda row, df: row['VotesMean'] >= 5.0,
+        test_frac=0.2,
+        random_state=1234
+    )
+
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Dense(1, activation='sigmoid'),
+    ])
+    
+    iterative_cls = NonNegativePU(
+        model=model,
+        positive_prior='auto',
+        loss_fn=tf.keras.losses.BinaryCrossentropy(),
+        compile_kwargs={'optimizer': 'adam'},
+        fit_kwargs={'epochs': 10}
+    )
+    
+    iterative_cls.fit(X_train, y_train, X_val, y_val)
+    #print(f'Evolution of f1 score: {iterative_cls.validation_results}')
+
+    bal_acc = balanced_accuracy_score(y_test, iterative_cls.predict(X_test))
+    acc = accuracy_score(y_test, iterative_cls.predict(X_test))
+    f1 = f1_score(y_test, iterative_cls.predict(X_test))
+
+    return bal_acc, acc, f1, iterative_cls.positive_prior
+
+
+# #### ViT feature extractor
+
+# In[ ]:
+
+
+extractors = ['clip-ViT-B-32', 'clip-ViT-B-16', 'clip-ViT-L-14']
+
+# Quantiles [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99]
+quantile_quantities = [
+    5.386517,
+    5.475771,
+    5.566116,
+    5.660284,
+    5.758871,
+    5.865385,
+    5.987416,
+    6.129032,
+    6.307692,
+    6.574194,
+    7.069421
+]
+
+extractor_col, quantile_col, prior_col, bal_acc_col, acc_col, f1_col = [], [], [], [], [], []
+
+for quantile in quantile_quantities:
+    for extractor in extractors:
+            try:
+                vit_extractor = ViTExtractor('quantile_experiments', extractor_name=extractor)
+                bal_acc, acc, f1, prior = quantile_experiment_nnpu(vit_extractor, quantile)
+                extractor_col.append(extractor)
+                quantile_col.append(quantile)
+                prior_col.append(prior)
+                bal_acc_col.append(bal_acc)
+                acc_col.append(acc)
+                f1_col.append(f1)
+                gc.collect()
+    
+            except Exception as e:
+                print(f'Fail at {quantile}, {extractor}')
+                print(traceback.format_exc())
+
+df = pd.DataFrame.from_dict({
+    'extractor': extractor_col,
+    'quantile': quantile_col,
+    'prior': prior_col,
+    'balanced_accuracy': bal_acc_col,
+    'accuracy': acc_col,
+    'f1': f1_col
+})
+
+df.to_csv('quantile_threshold_vit_results_ava_nnpu_autoprior.csv')
 
 
 # In[ ]:

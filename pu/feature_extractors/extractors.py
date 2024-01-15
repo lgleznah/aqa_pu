@@ -52,7 +52,7 @@ class Extractor(ABC):
         use_cache: whether to reuse or save the features from or into a cache file
         '''
 
-        features_file = os.path.join(self.project_root, 'embeddings', f'{self.experiment_name}_{self.filename}_{self.nfeatures}f.csv')
+        features_file = os.path.join(self.project_root, 'embeddings', f'{self.experiment_name}_{self.filename}.csv')
 
         if use_cache and os.path.exists(features_file):
             features = pd.read_pickle(features_file, compression='gzip')
@@ -111,7 +111,6 @@ class AutoencoderExtractor(Extractor):
         self.autoencoder.compile(optimizer='adam', loss='mean_squared_error')
 
         self.filename = f'autoencoder_input_{"_".join([str(x) for x in input_shape])}_filters_{"_".join([str(x) for x in filters])}_epochs_{epochs}'
-        self.nfeatures = self.encoder.layers[-1].output_shape[-1] * self.encoder.layers[-1].output_shape[-2] * self.encoder.layers[-1].output_shape[-3]
 
 
     def _extract_features(self, images):
@@ -154,21 +153,19 @@ class ViTExtractor(Extractor):
     def __init__(self, experiment_name, extractor_name='clip-ViT-B-32') -> None:
         super().__init__(experiment_name)
 
-        self.extractor = SentenceTransformer(extractor_name)
         self.filename = f'vit_name_{extractor_name}'
-        self.nfeatures = self.extractor.encode('john madden aeiou').shape[0]
 
     def _extract_features(self, images):
         '''
         Use the ViT to extract features
         '''
-
+        extractor = SentenceTransformer(self.extractor_name)
         chunks_positive = list(chunkify(images, 900))
 
         features = []
         for chunk in tqdm(chunks_positive):
             images = [Image.open(img) for img in chunk]
-            features.extend(self.extractor.encode(images, batch_size=32))
+            features.extend(extractor.encode(images, batch_size=32))
         
         features = np.array(features)
         return features

@@ -9,7 +9,7 @@ def create_nn_pu_loss(positive_prior, loss_fn):
         unlabeled_negative_risk = tf.reduce_mean(loss_fn(tf.zeros_like(unlabeled_examples), unlabeled_examples))
         positive_negative_risk = positive_prior * tf.reduce_mean(loss_fn(tf.zeros_like(positive_examples), positive_examples))
 
-        loss = positive_positive_risk + tf.math.maximum(0, unlabeled_negative_risk - positive_negative_risk)
+        loss = positive_positive_risk + tf.math.maximum(0.0, unlabeled_negative_risk - positive_negative_risk)
 
         return loss
     
