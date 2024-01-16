@@ -112,7 +112,6 @@ class AutoencoderExtractor(Extractor):
 
         self.filename = f'autoencoder_input_{"_".join([str(x) for x in input_shape])}_filters_{"_".join([str(x) for x in filters])}_epochs_{epochs}'
 
-
     def _extract_features(self, images):
         '''
         Use the autoencoder to extract features
@@ -154,6 +153,7 @@ class ViTExtractor(Extractor):
         super().__init__(experiment_name)
 
         self.filename = f'vit_name_{extractor_name}'
+        self.extractor_name = extractor_name
 
     def _extract_features(self, images):
         '''
