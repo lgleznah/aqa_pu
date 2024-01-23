@@ -181,7 +181,7 @@ class ProbTagging(PUAlgorithm):
     verbose: print or not debug messages
     '''
     def __init__(self, knn_num_samples, classifier_class, num_classifiers, 
-                 classifier_args=[], classifier_kwargs={}, 
+                 classifier_args=[], classifier_kwargs={}, positive_prior=None,
                  random_state=1234, verbose=False):
         
         super().__init__(verbose)
@@ -192,6 +192,7 @@ class ProbTagging(PUAlgorithm):
         self.classifier_args = classifier_args
         self.classifier_kwargs = classifier_kwargs
         self.rng = np.random.default_rng(random_state)
+        self.positive_prior = positive_prior
 
     def fit(self, X, y, X_val=None, y_val=None):
         '''
@@ -230,7 +231,8 @@ class ProbTagging(PUAlgorithm):
             classifier.fit(X_dataset, y_dataset)
             self.classifiers.append(classifier)
 
-        self.class_prior = np.sum(y == 1) / len(y)
+        if self.positive_prior is None:
+            self.positive_prior = np.sum(y == 1) / len(y)
 
 
     def predict(self, X):
@@ -243,7 +245,7 @@ class ProbTagging(PUAlgorithm):
         X: the examples to get the predictions for
         '''
         predictions = [classifier.predict(X) for classifier in self.classifiers]
-        return (np.mean(predictions, axis=0) > self.class_prior).astype(int)
+        return (np.mean(predictions, axis=0) > self.positive_prior).astype(int)
     
     def predict_proba(self, X):
         '''
