@@ -146,17 +146,30 @@ class KMeansDetector(NegativeDetector):
                            and the remaining unlabeled examples, respectively.
         '''
         # Fit clustering algorithm and compute whether each cluster is positive or not
-        self.clusterer.fit(np.concatenate([positives, unlabeled]))
+        all_elements = np.concatenate([positives, unlabeled])
+        self.clusterer.fit(all_elements)
         positive_centroids = []
         negative_centroids = []
 
+        cluster_proportions = []
+
         for i in range(self.n_clusters):
             cluster_indices = np.argwhere(self.clusterer.labels_ == i)
-            positive_proportion = np.sum(cluster_indices[cluster_indices < len(positives)]) / len(cluster_indices)
-            if (positive_proportion > 0.5):
-                positive_centroids.append(self.clusterer.cluster_centers_[i])
+            positive_proportion = np.sum(cluster_indices < len(positives)) / len(cluster_indices)
+            cluster_proportions.append(positive_proportion)
+
+        # Sort cluster positive proportions. Negative clusters will be the 50% of clusters with the
+        # smallest proportion
+        cluster_proportions_sorted = np.argsort(cluster_proportions)
+        i = 0
+        while (i < len(cluster_proportions_sorted)):
+            if (i < len(cluster_proportions_sorted) / 2):
+                negative_centroids.append(self.clusterer.cluster_centers_[cluster_proportions_sorted[i]])
             else:
-                negative_centroids.append(self.clusterer.cluster_centers_[i])
+                positive_centroids.append(self.clusterer.cluster_centers_[cluster_proportions_sorted[i]])
+            
+            i += 1
+
 
         # Rank each negative centroid by its distance to positive centroids
         avg_distance_to_positives = [np.mean([np.linalg.norm(neg_cent - pos_cent) 
@@ -169,21 +182,26 @@ class KMeansDetector(NegativeDetector):
         # Select reliable negatives from progresively closer clusters. Care is taken not to
         # select known positives.
         total_to_select = int(len(unlabeled) * self.frac)
-        unlabeled = []
+        print(f"Total to select: {total_to_select}")
+        unlabeled_selected = []
         idxs_to_delete = []
         cluster_ranking_idx = 0
 
-        while(cluster_ranking_idx < self.n_clusters):
+        while(cluster_ranking_idx < len(cluster_ranking)):
             cluster_idx = cluster_ranking[cluster_ranking_idx]
+            print(f"Cluster index: {cluster_idx}")
             cluster_indices = np.argwhere(self.clusterer.labels_ == cluster_idx)
+            print(f"Elements of this cluster: {cluster_indices}, {len(cluster_indices)} elements")
             cluster_indices_unlabeled = cluster_indices[cluster_indices < len(positives)]
+            print(f"Unlabeled elements: {cluster_indices_unlabeled}, {len(cluster_indices_unlabeled)} elements")
             take_in_cluster = min(total_to_select, len(cluster_indices_unlabeled))
+            print(f"Elements to take: {take_in_cluster}")
             random_idxs = self.rng.permutation(cluster_indices_unlabeled)
-            unlabeled.append(np.take(unlabeled, random_idxs[:take_in_cluster]))
-            idxs_to_delete.append(random_idxs)
+            unlabeled_selected.append(np.take(all_elements, random_idxs[:take_in_cluster], axis=0))
+            idxs_to_delete.extend(random_idxs)
             total_to_select -= take_in_cluster
             if total_to_select == 0:
                 break
             cluster_ranking_idx += 1
         
-        return np.concatenate(unlabeled), np.delete(unlabeled, list(np.concatenate(idxs_to_delete)))
+        return np.concatenate(unlabeled_selected, axis=0), np.delete(all_elements, idxs_to_delete, axis=0)
