@@ -24,7 +24,7 @@ def f1_pu(y_true, y_pred):
 
     return recall * recall / pr_yhat_positive
 
-def aul_pu(y_true, y_pred, step=0.01):
+def aul_pu(y_true, y_pred):
     '''
     Area-under-lift curve for PU problems.
 
@@ -32,27 +32,60 @@ def aul_pu(y_true, y_pred, step=0.01):
     Training Method for Extremely Imbalanced Data Sets", this metric approaches its equivalent for traditional 
     binary classification problems when the number of samples is relatively large.
 
-    Code for getting the lift curve gotten from:
-    https://howtolearnmachinelearning.com/articles/the-lift-curve-in-machine-learning/
+    Code implementation follows what is shown on "AUL IS A BETTER OPTIMIZATION METRIC IN PU LEARNING"
     '''
+    if not isinstance(y_true, np.ndarray):
+        y_true = np.array(y_true)
 
-    # Sort predictions to get lift curve
-    y_pred_sorted_idxs = np.argsort(y_pred)[::-1]
-    y_true_sorted = y_true[y_pred_sorted_idxs]
+    if not isinstance(y_pred, np.ndarray):
+        y_pred = np.array(y_pred)
 
-    x_val = np.arange(step,1+step,step)
-    ratio_ones = y_true.sum() / len(y_true)
-    curve_values = []
+    def s(a, b):
+        if (a > b):
+            return 1.0
+        elif (a < b):
+            return 0.0
+        return 0.5
+    
+    n_labeled = np.sum(y_true == 1)
+    n_total = len(y_true)
+    factor = 1.0 / (n_labeled * n_total)
+    acc = 0
 
-    for x in x_val:
-        num_data = int(np.ceil(x*len(y_pred)))
-        data_here = y_true_sorted[:num_data]
-        ratio_ones_here = data_here.sum() / len(data_here)
-        curve_values.append(ratio_ones_here / ratio_ones)
+    labeled_predictions = y_pred[y_true == 1]
+    for labeled_pred in labeled_predictions:
+        for pred in y_pred:
+            acc += s(labeled_pred, pred)
 
-    # Integrate lift curve to get AUL metric
-    metric = 0.0
-    for value in curve_values:
-        metric += value * step
+    return factor * acc
 
-    return metric
+def lift_curve_pu(y_true, y_pred):
+    '''
+    Returns a list of (x,y) points representing the PU Lift Curve for the given data.
+    '''
+    if not isinstance(y_true, np.ndarray):
+        y_true = np.array(y_true)
+
+    if not isinstance(y_pred, np.ndarray):
+        y_pred = np.array(y_pred)
+
+    preds_ordering = np.argsort(y_pred)
+    y_pred_sorted = y_pred[preds_ordering]
+    y_true_sorted = y_true[preds_ordering]
+    n = len(y_pred_sorted)
+    p_count = len(y_true_sorted[y_true_sorted == 1])
+
+    x,y = [],[]
+
+    for threshold in y_pred_sorted:
+        y_pred_thresh = y_pred_sorted > threshold
+        tp_count = np.sum((y_true_sorted == 1) & (y_pred_thresh == 1))
+        fp_count = np.sum((y_true_sorted == 0) & (y_pred_thresh == 1))
+        y_rate = (tp_count + fp_count) / n
+
+        tpr = tp_count / p_count
+
+        x.append(y_rate)
+        y.append(tpr)
+
+    return x,y
