@@ -246,7 +246,7 @@ def run_baseline_experiments(features_dict, classifiers):
 
     X_train_ava, X_val_ava, X_test_ava, y_train_ava, y_val_ava, y_test_ava = build_pu_data(
         ava_feats,
-        frac=0.5,
+        frac=1.0,
         move_to_unlabeled_frac=0.0,
         val_split=0.2,
         val_split_positive='same',
@@ -258,7 +258,7 @@ def run_baseline_experiments(features_dict, classifiers):
 
     X_train_aadb, _, _, y_train_aadb, _, _ = build_pu_data(
         aadb_feats_train,
-        frac=0.5,
+        frac=1.0,
         move_to_unlabeled_frac=0.0,
         val_split=0,
         val_split_positive='same',
@@ -270,7 +270,7 @@ def run_baseline_experiments(features_dict, classifiers):
 
     _, X_val_aadb, _, _, y_val_aadb, _ = build_pu_data(
         aadb_feats_val,
-        frac=0.5,
+        frac=1.0,
         move_to_unlabeled_frac=0.0,
         val_split=1.0,
         val_split_positive='same',
@@ -284,15 +284,31 @@ def run_baseline_experiments(features_dict, classifiers):
         aadb_feats_test, 
         lambda row, df: row['label'] > 0.5, 
         lambda row, df: row['label'] >= 0.5, 
-        0.5, 
+        1.0, 
         random_state=1234
     )
+
+    X_train_laion, X_val_laion, X_test_laion, _, _, _ = laion_splits(features_dict, 'clip-ViT-L-14', 0.5)
+    X_train_laion_full = np.concatenate([X_train_laion, X_val_laion, X_test_laion], axis=0)
+    y_train_laion_full = np.ones(len(X_train_laion_full))
 
     settings_splits = {
         'AVA-AVA': (X_train_ava, X_test_ava, y_train_ava, y_test_ava),
         'AVA-AADB': (X_train_ava, X_test_aadb, y_train_ava, y_test_aadb),
         'AADB-AVA': (X_train_aadb, X_test_ava, y_train_aadb, y_test_ava),
         'AADB-AADB': (X_train_aadb, X_test_aadb, y_train_aadb, y_test_aadb),
+        'LAION+AVA-AADB': (
+            np.concatenate([X_train_laion_full, X_train_ava]),
+            X_test_aadb,
+            np.concatenate([y_train_laion_full, y_train_ava]),
+            y_test_aadb
+        ),
+        'LAION+AADB-AVA': (
+            np.concatenate([X_train_laion_full, X_train_aadb]),
+            X_test_ava,
+            np.concatenate([y_train_laion_full, y_train_aadb]),
+            y_test_ava
+        ),
     }
 
     # Run experiments with baseline PN classifiers
@@ -323,7 +339,7 @@ def run_baseline_experiments(features_dict, classifiers):
         'f1': f1_col
     })
 
-    df.to_csv("baselines.csv")
+    df.to_csv("baselines_nomove.csv")
     
 
 def run_all_experiments(features):
@@ -348,6 +364,7 @@ def run_all_experiments(features):
 
     # Baselines
     run_baseline_experiments(features, classifiers)
+    return
 
     # AVA experiments
     run_experiment(features, ava_splits, ava_splits, 'ava_ava_twostep_nomove', extractors, ava_quantiles, classifiers, negative_detectors)
