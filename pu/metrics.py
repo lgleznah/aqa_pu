@@ -75,7 +75,7 @@ def lift_curve_pu(y_true, y_pred):
     n = len(y_pred_sorted)
     p_count = len(y_true_sorted[y_true_sorted == 1])
 
-    x,y = [],[]
+    x,y = [1],[1]
 
     for threshold in y_pred_sorted:
         y_pred_thresh = y_pred_sorted > threshold
@@ -88,4 +88,4 @@ def lift_curve_pu(y_true, y_pred):
         x.append(y_rate)
         y.append(tpr)
 
-    return x,y
+    return x, y
