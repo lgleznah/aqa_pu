@@ -15,6 +15,7 @@ import gc
 from pu.feature_extractors.extractors import ViTExtractor, AutoencoderExtractor
 from pu.data.loaders import CSVLoader, SingleCSVLoader, SingleCSVWithTestLoader, FullCSVLoader
 from pu.data.pu_builder import build_pu_data, pn_test_split
+from pu.metrics import aul_pu
 
 from pu.algorithms.pu_algorithms import IterativeClassifierAlgorithm, ProbTagging, NonNegativePU
 from pu.algorithms.negative_detectors import NaiveDetector, KNNDetector, KMeansDetector
@@ -166,8 +167,8 @@ def get_laion_train_func(train_ds_func):
         laion_train, laion_val, laion_test, _, _, _ = laion_splits(features_dict, extractor, quantile)
         laion_full = np.concatenate([laion_train, laion_val, laion_test], axis=0)
         
-        other_train, other_val, other_test, _, _, _ = train_ds_func(features_dict, extractor, quantile)
-        other_full = np.concatenate([other_train, other_val, other_test], axis=0)
+        other_train, other_val, _, _, _, _ = train_ds_func(features_dict, extractor, quantile)
+        other_full = np.concatenate([other_train, other_val], axis=0)
         
         ds_full = np.concatenate([laion_full, other_full], axis=0)
         labels = np.concatenate([np.ones(len(laion_full)), np.zeros(len(other_full))])
@@ -195,7 +196,8 @@ def create_iterative(detector, classifer, classifier_kwargs):
 
 
 def run_experiment(features, train_ds_func, test_ds_func, exp_name, extractors, relpos, classifiers_and_args, neg_detectors):
-    extractor_col, reliablepos_col, classifier_col, detector_col, bal_acc_col, acc_col, f1_col = [], [], [], [], [], [], []
+    extractor_col, reliablepos_col, classifier_col, detector_col, bal_acc_col, acc_col, f1_col, aul_col = [], [], [], [], [], [], [], []
+    y_true_col, y_pred_col = [], []
 
     exp_file = f"{exp_name}_results.csv"
     #if os.path.exists(exp_file):
@@ -207,14 +209,17 @@ def run_experiment(features, train_ds_func, test_ds_func, exp_name, extractors, 
                 for detector in neg_detectors:
                     X_train, X_val, _, y_train, y_val, _ = train_ds_func(features, extractor, relpos_thresh)
                     _, _, X_test, _, _, y_test = test_ds_func(features, extractor, relpos_thresh)
-
                     negative_detector = neg_detectors[detector][0](**neg_detectors[detector][1])
                     classifier = create_iterative(negative_detector, *classifiers_and_args[cls])
                     classifier.fit(X_train, y_train, X_val, y_val)
+                    y_pred = classifier.predict(X_test)
+                    y_true_col.append(y_test.tolist())
+                    y_pred_col.append(classifier.predict_proba(X_test).tolist())
                     
-                    bal_acc = balanced_accuracy_score(y_test, classifier.predict(X_test))
-                    acc = accuracy_score(y_test, classifier.predict(X_test))
-                    f1 = f1_score(y_test, classifier.predict(X_test))
+                    bal_acc = balanced_accuracy_score(y_test, y_pred)
+                    acc = accuracy_score(y_test, y_pred)
+                    f1 = f1_score(y_test, y_pred)
+                    aul = aul_pu(y_test, y_pred)
 
                     extractor_col.append(extractor)
                     reliablepos_col.append(relpos_thresh)
@@ -223,6 +228,7 @@ def run_experiment(features, train_ds_func, test_ds_func, exp_name, extractors, 
                     bal_acc_col.append(bal_acc)
                     acc_col.append(acc)
                     f1_col.append(f1)
+                    aul_col.append(aul)
                     gc.collect()
 
     df = pd.DataFrame.from_dict({
@@ -232,7 +238,10 @@ def run_experiment(features, train_ds_func, test_ds_func, exp_name, extractors, 
         'detector': detector_col,
         'balanced_accuracy': bal_acc_col,
         'accuracy': acc_col,
-        'f1': f1_col
+        'f1': f1_col,
+        'aul': aul_col,
+        'y_true': y_true_col,
+        'y_pred': y_pred_col
     })
 
     df.to_csv(exp_file)
@@ -250,7 +259,7 @@ def run_baseline_experiments(features_dict, classifiers):
         move_to_unlabeled_frac=0.0,
         val_split=0.2,
         val_split_positive='same',
-        reliable_positive_fn=lambda row, df: row['VotesMean'] > 5.0,
+        reliable_positive_fn=lambda row, df: row['VotesMean'] > 50.0,
         positive_fn=lambda row, df: row['VotesMean'] >= 5.0,
         test_frac=0.2,
         random_state=1234
@@ -262,7 +271,7 @@ def run_baseline_experiments(features_dict, classifiers):
         move_to_unlabeled_frac=0.0,
         val_split=0,
         val_split_positive='same',
-        reliable_positive_fn=lambda row, df: row['label'] > 0.5,
+        reliable_positive_fn=lambda row, df: row['label'] > 5,
         positive_fn=lambda row, df: row['label'] >= 0.5,
         test_frac=0,
         random_state=1234
@@ -274,7 +283,7 @@ def run_baseline_experiments(features_dict, classifiers):
         move_to_unlabeled_frac=0.0,
         val_split=1.0,
         val_split_positive='same',
-        reliable_positive_fn=lambda row, df: row['label'] > 0.5,
+        reliable_positive_fn=lambda row, df: row['label'] > 5,
         positive_fn=lambda row, df: row['label'] >= 0.5,
         test_frac=0,
         random_state=1234
@@ -282,7 +291,7 @@ def run_baseline_experiments(features_dict, classifiers):
 
     _, _, X_test_aadb, y_test_aadb = pn_test_split(
         aadb_feats_test, 
-        lambda row, df: row['label'] > 0.5, 
+        lambda row, df: row['label'] > 5, 
         lambda row, df: row['label'] >= 0.5, 
         1.0, 
         random_state=1234
@@ -293,14 +302,22 @@ def run_baseline_experiments(features_dict, classifiers):
     y_train_laion_full = np.ones(len(X_train_laion_full))
 
     settings_splits = {
-        'AVA-AVA': (X_train_ava, X_test_ava, y_train_ava, y_test_ava),
-        'AVA-AADB': (X_train_ava, X_test_aadb, y_train_ava, y_test_aadb),
-        'AADB-AVA': (X_train_aadb, X_test_ava, y_train_aadb, y_test_ava),
-        'AADB-AADB': (X_train_aadb, X_test_aadb, y_train_aadb, y_test_aadb),
+        'LAION+AVA-AVA': (
+            np.concatenate([X_train_laion_full, X_train_ava]),
+            X_test_ava,
+            np.concatenate([y_train_laion_full, y_train_ava]),
+            y_test_ava
+        ),
         'LAION+AVA-AADB': (
             np.concatenate([X_train_laion_full, X_train_ava]),
             X_test_aadb,
             np.concatenate([y_train_laion_full, y_train_ava]),
+            y_test_aadb
+        ),
+        'LAION+AADB-AADB': (
+            np.concatenate([X_train_laion_full, X_train_aadb]),
+            X_test_aadb,
+            np.concatenate([y_train_laion_full, y_train_aadb]),
             y_test_aadb
         ),
         'LAION+AADB-AVA': (
@@ -312,23 +329,30 @@ def run_baseline_experiments(features_dict, classifiers):
     }
 
     # Run experiments with baseline PN classifiers
-    setting_col, classifier_col, balacc_col, acc_col, f1_col = [], [], [], [], []
+    setting_col, classifier_col, balacc_col, acc_col, f1_col, aul_col = [], [], [], [], [], []
+    y_true_col, y_pred_col = [], []
 
     for setting in settings_splits:
         for cls in classifiers:
             X_train, X_test, y_train, y_test = settings_splits[setting]
             classifier = classifiers[cls][0](**classifiers[cls][1])
             classifier.fit(X_train, y_train)
+            y_pred = classifier.predict(X_test)
 
-            bal_acc = balanced_accuracy_score(y_test, classifier.predict(X_test))
-            acc = accuracy_score(y_test, classifier.predict(X_test))
-            f1 = f1_score(y_test, classifier.predict(X_test))
+            y_true_col.append(y_test.tolist())
+            y_pred_col.append(classifier.predict_proba(X_test).tolist())
+
+            bal_acc = balanced_accuracy_score(y_test, y_pred)
+            acc = accuracy_score(y_test, y_pred)
+            f1 = f1_score(y_test, y_pred)
+            aul = aul_pu(y_test, y_pred)
 
             setting_col.append(setting)
             classifier_col.append(cls)
             balacc_col.append(bal_acc)
             acc_col.append(acc)
             f1_col.append(f1)
+            aul_col.append(aul)
             gc.collect()
 
     df = pd.DataFrame.from_dict({
@@ -336,10 +360,13 @@ def run_baseline_experiments(features_dict, classifiers):
         'classifier': classifier_col,
         'balanced_accuracy': balacc_col,
         'accuracy': acc_col,
-        'f1': f1_col
+        'f1': f1_col,
+        'aul': aul_col,
+        'y_true': y_true_col,
+        'y_pred': y_pred_col
     })
 
-    df.to_csv("baselines_nomove.csv")
+    df.to_csv("baselines_nolabels.csv")
     
 
 def run_all_experiments(features):
@@ -351,32 +378,24 @@ def run_all_experiments(features):
     classifiers = {
         'logistic': (LogisticRegression, {'max_iter':10000, 'n_jobs':-1, 'random_state':1234}),
         'kneighbours': (KNeighborsClassifier, {'n_neighbors': 20}),
-        'qda': (QuadraticDiscriminantAnalysis, {}),
         'naivebayes': (GaussianNB, {})
     }
     
     negative_detectors = {
-        'k-means': (KMeansDetector, {'frac': 0.1, 'n_clusters': 20, 'random_state': 1234}),
-        'knn': (KNNDetector, {'frac': 0.1, 'k': 20})
+        'knn': (KNNDetector, {'frac': 0.1, 'k': 200})
     }
     
-    extractors = ['clip-ViT-L-14']
+    extractors = ['clip-ViT-B-32', 'clip-ViT-B-16', 'clip-ViT-L-14']
 
     # Baselines
     run_baseline_experiments(features, classifiers)
     return
 
-    # AVA experiments
-    run_experiment(features, ava_splits, ava_splits, 'ava_ava_twostep_nomove', extractors, ava_quantiles, classifiers, negative_detectors)
-    run_experiment(features, ava_splits, aadb_splits, 'ava_aadb_twostep_nomove', extractors, ava_quantiles, classifiers, negative_detectors)
-    
-    # AADB experiments
-    run_experiment(features, aadb_splits, ava_splits, 'aadb_ava_twostep_nomove', extractors, aadb_quantiles, classifiers, negative_detectors)
-    run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb_twostep_nomove', extractors, aadb_quantiles, classifiers, negative_detectors)
-    
     # LAION experiments
-    run_experiment(features, get_laion_train_func(ava_splits), full_aadb_test, 'laion+ava_aadb_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
-    run_experiment(features, get_laion_train_func(aadb_splits), full_ava_test, 'laion+aadb_ava_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
+    run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
+    run_experiment(features, get_laion_train_func(ava_splits), aadb_splits, 'laion+ava_aadb_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
+    run_experiment(features, get_laion_train_func(aadb_splits), aadb_splits, 'laion+aadb_aadb_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
+    run_experiment(features, get_laion_train_func(aadb_splits), ava_splits, 'laion+aadb_ava_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
     
 
 def main():
