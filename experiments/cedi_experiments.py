@@ -22,15 +22,13 @@ from pu.algorithms.negative_detectors import NaiveDetector, KNNDetector, KMeansD
 from pu.algorithms.stop_criterion import StopOnMetricDrop, NonStop
 
 from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC, SVC
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
-
 
 # Having verified the proper behaviour of the implemented algorithms, it is now a good time to verify how these work when training and evaluating with and against AVA, LAION-AES and AADB.
 # 
@@ -259,7 +257,7 @@ def run_baseline_experiments(features_dict, classifiers):
         move_to_unlabeled_frac=0.0,
         val_split=0.2,
         val_split_positive='same',
-        reliable_positive_fn=lambda row, df: row['VotesMean'] > 50.0,
+        reliable_positive_fn=lambda row, df: row['VotesMean'] > 5.0,
         positive_fn=lambda row, df: row['VotesMean'] >= 5.0,
         test_frac=0.2,
         random_state=1234
@@ -271,7 +269,7 @@ def run_baseline_experiments(features_dict, classifiers):
         move_to_unlabeled_frac=0.0,
         val_split=0,
         val_split_positive='same',
-        reliable_positive_fn=lambda row, df: row['label'] > 5,
+        reliable_positive_fn=lambda row, df: row['label'] > 0.5,
         positive_fn=lambda row, df: row['label'] >= 0.5,
         test_frac=0,
         random_state=1234
@@ -283,7 +281,7 @@ def run_baseline_experiments(features_dict, classifiers):
         move_to_unlabeled_frac=0.0,
         val_split=1.0,
         val_split_positive='same',
-        reliable_positive_fn=lambda row, df: row['label'] > 5,
+        reliable_positive_fn=lambda row, df: row['label'] > 0.5,
         positive_fn=lambda row, df: row['label'] >= 0.5,
         test_frac=0,
         random_state=1234
@@ -291,7 +289,7 @@ def run_baseline_experiments(features_dict, classifiers):
 
     _, _, X_test_aadb, y_test_aadb = pn_test_split(
         aadb_feats_test, 
-        lambda row, df: row['label'] > 5, 
+        lambda row, df: row['label'] > 0.5, 
         lambda row, df: row['label'] >= 0.5, 
         1.0, 
         random_state=1234
@@ -366,7 +364,7 @@ def run_baseline_experiments(features_dict, classifiers):
         'y_pred': y_pred_col
     })
 
-    df.to_csv("baselines_nolabels.csv")
+    df.to_csv("baselines_nomove.csv")
     
 
 def run_all_experiments(features):
@@ -377,19 +375,23 @@ def run_all_experiments(features):
 
     classifiers = {
         'logistic': (LogisticRegression, {'max_iter':10000, 'n_jobs':-1, 'random_state':1234}),
-        'kneighbours': (KNeighborsClassifier, {'n_neighbors': 20}),
-        'naivebayes': (GaussianNB, {})
+        'kneighbours-5': (KNeighborsClassifier, {'n_neighbors': 5}),
+        'kneighbours-9': (KNeighborsClassifier, {'n_neighbors': 9}),
+        'kneighbours-19': (KNeighborsClassifier, {'n_neighbors': 19}),
+        'naivebayes': (GaussianNB, {}),
+        'rf': (RandomForestClassifier, {}),
+        'svm': (CalibratedClassifierCV, {'estimator': LinearSVC(max_iter=10000, dual='auto')})
     }
     
     negative_detectors = {
         'knn': (KNNDetector, {'frac': 0.1, 'k': 200})
     }
     
-    extractors = ['clip-ViT-B-32', 'clip-ViT-B-16', 'clip-ViT-L-14']
+    #extractors = ['clip-ViT-B-32', 'clip-ViT-B-16', 'clip-ViT-L-14']
+    extractors = ['clip-ViT-L-14']
 
     # Baselines
-    run_baseline_experiments(features, classifiers)
-    return
+    #run_baseline_experiments(features, classifiers)
 
     # LAION experiments
     run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
@@ -397,6 +399,12 @@ def run_all_experiments(features):
     run_experiment(features, get_laion_train_func(aadb_splits), aadb_splits, 'laion+aadb_aadb_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
     run_experiment(features, get_laion_train_func(aadb_splits), ava_splits, 'laion+aadb_ava_twostep_nomove', extractors, [0.5], classifiers, negative_detectors)
     
+
+def drop_not_features(df):
+    drop_columns = [col_name for col_name in df.columns if "__feature__" not in col_name]
+    return df.drop(columns=drop_columns)
+
+import shutil
 
 def main():
     extractors = ['clip-ViT-B-32', 'clip-ViT-B-16', 'clip-ViT-L-14']
@@ -420,6 +428,18 @@ def main():
             path_col = dataset_params[dataset][1]
             data = loader.load_data()
             features = feature_extractor.extract_features(data[path_col])
+
+            '''
+            if (extractor == 'clip-ViT-L-14'):
+                negatives = np.load('image_examples/positives/positives.npy')
+                features_np = drop_not_features(features).to_numpy()
+                for i in range(negatives.shape[0]):
+                    for j in range(features.shape[0]):
+                        if np.array_equal(negatives[i,:], features_np[j,:]):
+                            print(data.iloc[j]['id'], data.iloc[j]['VotesMean'])
+                            shutil.copy2(data.iloc[j]['id'], 'image_examples/positives')
+            '''
+
             df = pd.concat([data.drop(columns=[path_col]), features.drop(columns=["id"])], axis=1)
             all_features[featureset_name] = df
 
