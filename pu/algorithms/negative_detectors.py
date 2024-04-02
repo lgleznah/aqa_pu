@@ -101,6 +101,8 @@ class KNNDetector(NegativeDetector):
         unlabeled_distances = neighbour_detector.kneighbors(unlabeled)[0]
         average_distances = np.mean(unlabeled_distances, axis=1)
 
+        #print(np.max(average_distances), np.min(average_distances))
+
         # Rank distances and return reliable negatives
         sorted_distances_idxs = np.argsort(average_distances)[::-1]
         amount = int(len(unlabeled) * self.frac)
