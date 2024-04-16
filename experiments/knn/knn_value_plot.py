@@ -12,6 +12,12 @@ def main():
     balaccs = pd.concat([balaccs_small, balaccs_large]).squeeze()
 
     plot = sns.lineplot(x=negative_detectors, y=balaccs)
+
+    plot.set_ylim([0.6, 0.62])
+    plot.set_xlabel("Value of $k$")
+    plot.set_ylabel("Balanced accuracy")
+    plot.set_yticks([0.6, 0.61, 0.62])
+
     fig = plot.get_figure()
     fig.savefig("knn_plot.pdf") 
 
