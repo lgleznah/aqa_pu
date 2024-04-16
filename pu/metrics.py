@@ -35,10 +35,16 @@ def aul_pu(y_true, y_pred):
     Code implementation follows what is shown on "AUL IS A BETTER OPTIMIZATION METRIC IN PU LEARNING"
     '''
     if not isinstance(y_true, np.ndarray):
-        y_true = np.array(y_true)
+        if isinstance(y_true, str):
+            y_true = np.fromstring(y_true.replace("[", "").replace("]", ""), sep=',')
+        else:
+            y_true = np.array(y_true)
 
     if not isinstance(y_pred, np.ndarray):
-        y_pred = np.array(y_pred)
+        if isinstance(y_pred, str):
+            y_pred = np.fromstring(y_pred.replace("[", "").replace("]", ""), sep=',')
+        else:
+            y_pred = np.array(y_pred)
 
     def s(a, b):
         if (a > b):
@@ -47,6 +53,11 @@ def aul_pu(y_true, y_pred):
             return 0.0
         return 0.5
     
+    # Fix for differently-shaped arrays. One of them might be probabilities for 0 and 1,
+    # whereas the other might be only probabilities for 1.
+    if (y_pred.shape[0] == y_true.shape[0] * 2):
+        y_pred = y_pred[1::2]
+
     n_labeled = np.sum(y_true == 1)
     n_total = len(y_true)
     factor = 1.0 / (n_labeled * n_total)
