@@ -32,6 +32,10 @@ def pn_test_split(
     df_test_positive = df_positive.iloc[test_positive_idxs]
     df_test_negative = df_negative.iloc[test_negative_idxs]
 
+    # Fix to measure PU metrics properly on a true PU test set
+    df_test_pu = pd.concat([df_test_positive, df_test_negative])
+    y_test_pu = df_test_pu.apply(lambda x: reliable_positive_fn(x, df_test_pu), axis=1).astype(int)
+
     df_positive = df_positive.reset_index(drop=True)
     df_negative = df_negative.reset_index(drop=True)
     df_positive = df_positive.drop(test_positive_idxs)
@@ -49,7 +53,7 @@ def pn_test_split(
     X_test = np.concatenate([test_positive_data, test_negative_data])
     y_test = np.concatenate([np.ones(len(test_positive_data)), np.zeros(len(test_negative_data))])
 
-    return positive_data, unlabeled_data, X_test, y_test
+    return positive_data, unlabeled_data, X_test, y_test, y_test_pu
 
 
 
@@ -83,7 +87,7 @@ def build_pu_data(
     -------
     The dataset of positive and unlabeled examples
     '''
-    positive_data, unlabeled_data, X_test, y_test = pn_test_split(data, reliable_positive_fn, positive_fn, test_frac, random_state)
+    positive_data, unlabeled_data, X_test, y_test, y_test_pu = pn_test_split(data, reliable_positive_fn, positive_fn, test_frac, random_state)
     rng = np.random.default_rng(seed=random_state)
 
     # Compute image amounts on each partition
@@ -141,4 +145,4 @@ def build_pu_data(
     #assert len(X_train) == known_positive_amount + positive_in_unlabeled_amount + true_unlabeled_amount, \
     #        f"Partition lengths wrong! Train split should have {known_positive_amount + positive_in_unlabeled_amount + true_unlabeled_amount} rows, found {len(X_train)}"
 
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    return X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu

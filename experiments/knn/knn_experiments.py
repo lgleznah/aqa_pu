@@ -33,7 +33,7 @@ from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 def ava_splits(features_dict, extractor, quantile):
     features = features_dict[f"{extractor}__ava"]
     
-    X_train, X_val, X_test, y_train, y_val, y_test = build_pu_data(
+    X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu = build_pu_data(
         features,
         frac=1.0,
         move_to_unlabeled_frac=0.0,
@@ -45,14 +45,14 @@ def ava_splits(features_dict, extractor, quantile):
         random_state=1234
     )
 
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    return X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu
 
 def aadb_splits(features_dict, extractor, quantile):
     features_train = features_dict[f"{extractor}__aadb_train"]
     features_val = features_dict[f"{extractor}__aadb_val"]
     features_test = features_dict[f"{extractor}__aadb_test"]
     
-    X_train, _, _, y_train, _, _ = build_pu_data(
+    X_train, _, _, y_train, _, _, _ = build_pu_data(
         features_train,
         frac=1.0,
         move_to_unlabeled_frac=0.0,
@@ -64,7 +64,7 @@ def aadb_splits(features_dict, extractor, quantile):
         random_state=1234
     )
 
-    _, X_val, _, _, y_val, _ = build_pu_data(
+    _, X_val, _, _, y_val, _, _ = build_pu_data(
         features_val,
         frac=1.0,
         move_to_unlabeled_frac=0.0,
@@ -76,7 +76,7 @@ def aadb_splits(features_dict, extractor, quantile):
         random_state=1234
     )
 
-    _, _, X_test, y_test = pn_test_split(
+    _, _, X_test, y_test, y_test_pu = pn_test_split(
         features_test, 
         lambda row, df: row['label'] > quantile, 
         lambda row, df: row['label'] >= 0.5, 
@@ -84,13 +84,13 @@ def aadb_splits(features_dict, extractor, quantile):
         random_state=1234
     )
 
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    return X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu
 
 # LAION-AES 6.5 is considered to only contain highly-aesthetic images. No need for unlabeled examples.
 def laion_splits(features_dict, extractor, quantile):
     features = features_dict[f"{extractor}__laion_aes"]
 
-    X_train, X_val, X_test, y_train, y_val, y_test = build_pu_data(
+    X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu = build_pu_data(
         features,
         frac=1.0,
         move_to_unlabeled_frac=0,
@@ -102,12 +102,12 @@ def laion_splits(features_dict, extractor, quantile):
         random_state=1234
     )
 
-    return X_train, X_val, X_test, y_train, y_val, y_test
+    return X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu
 
 def full_ava_test(features_dict, extractor, quantile):
     features = features_dict[f"{extractor}__ava"]
     
-    _, _, X_test, y_test = pn_test_split(
+    _, _, X_test, y_test, y_test_pu = pn_test_split(
         features, 
         lambda row, df: row['VotesMean'] > quantile, 
         lambda row, df: row['VotesMean'] >= 5.0, 
@@ -115,7 +115,7 @@ def full_ava_test(features_dict, extractor, quantile):
         random_state=1234
     )
     
-    return _, _, X_test, _, _, y_test
+    return _, _, X_test, _, _, y_test, y_test_pu
     
 def full_aadb_test(features_dict, extractor, quantile):
     features_train = features_dict[f"{extractor}__aadb_train"]
@@ -124,7 +124,7 @@ def full_aadb_test(features_dict, extractor, quantile):
     
     features = pd.concat([features_train, features_val, features_test])
     
-    _, _, X_test, y_test = pn_test_split(
+    _, _, X_test, y_test, y_test_pu = pn_test_split(
         features, 
         lambda row, df: row['label'] > quantile, 
         lambda row, df: row['label'] >= 0.5, 
@@ -132,21 +132,21 @@ def full_aadb_test(features_dict, extractor, quantile):
         random_state=1234
     )
     
-    return _, _, X_test, _, _, y_test
+    return _, _, X_test, _, _, y_test, y_test_pu
 
 def get_laion_train_func(train_ds_func):
     def train_func(features_dict, extractor, quantile):
-        laion_train, laion_val, laion_test, _, _, _ = laion_splits(features_dict, extractor, quantile)
+        laion_train, laion_val, laion_test, _, _, _, _ = laion_splits(features_dict, extractor, quantile)
         laion_full = np.concatenate([laion_train, laion_val, laion_test], axis=0)
         
-        other_train, other_val, _, _, _, _ = train_ds_func(features_dict, extractor, quantile)
+        other_train, other_val, _, _, _, _, _ = train_ds_func(features_dict, extractor, quantile)
         other_full = np.concatenate([other_train, other_val], axis=0)
         
         ds_full = np.concatenate([laion_full, other_full], axis=0)
         labels = np.concatenate([np.ones(len(laion_full)), np.zeros(len(other_full))])
         X_train, X_val, y_train, y_val = train_test_split(ds_full, labels, test_size=0.2, random_state=1234, shuffle=True, stratify=labels)
 	
-        return X_train, X_val, None, y_train, y_val, None
+        return X_train, X_val, None, y_train, y_val, None, None
 	
     return train_func
 
@@ -179,19 +179,18 @@ def run_experiment(features, train_ds_func, test_ds_func, exp_name, extractors, 
         for relpos_thresh in relpos:
             for cls in classifiers_and_args:
                 for detector in neg_detectors:
-                    X_train, X_val, _, y_train, y_val, _ = train_ds_func(features, extractor, relpos_thresh)
-                    _, _, X_test, _, _, y_test = test_ds_func(features, extractor, relpos_thresh)
+                    X_train, X_val, _, y_train, y_val, _, _ = train_ds_func(features, extractor, relpos_thresh)
                     negative_detector = neg_detectors[detector][0](**neg_detectors[detector][1])
                     classifier = create_iterative(negative_detector, *classifiers_and_args[cls])
                     classifier.fit(X_train, y_train, X_val, y_val)
-                    y_pred = classifier.predict(X_test)
-                    y_true_col.append(y_test.tolist())
-                    y_pred_col.append(classifier.predict_proba(X_test).tolist())
+                    y_pred = classifier.predict(X_val)
+                    y_true_col.append(y_val.tolist())
+                    y_pred_col.append(classifier.predict_proba(X_val).tolist())
                     
-                    bal_acc = balanced_accuracy_score(y_test, y_pred)
-                    acc = accuracy_score(y_test, y_pred)
-                    f1 = f1_score(y_test, y_pred)
-                    aul = aul_pu(y_test, y_pred)
+                    bal_acc = balanced_accuracy_score(y_val, y_pred)
+                    acc = accuracy_score(y_val, y_pred)
+                    f1 = f1_score(y_val, y_pred)
+                    aul = aul_pu(y_val, y_pred)
 
                     extractor_col.append(extractor)
                     reliablepos_col.append(relpos_thresh)
@@ -239,7 +238,7 @@ def run_all_experiments(features):
     extractors = ['clip-ViT-L-14']
 
     # kNN experiments
-    #run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava_knn_selection', extractors, [0.5], classifiers, negative_detectors)
+    run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava_knn_selection', extractors, [0.5], classifiers, negative_detectors)
     run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava_knn_selection_small', extractors, [0.5], classifiers, negative_detectors_small_k)
 
 

@@ -1,0 +1,495 @@
+<!--
+Parameters:
+
+title, date
+
+-->
+<html>
+
+<head>
+    <meta charset="UTF-8">
+
+    <link href="assets/bootstrap.min.css" rel="stylesheet" />
+
+    <title>Report</title>
+</head>
+
+<body data-spy="scroll" data-target="#side-nav" data-offset="350">
+
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="http://exreport.jarias.es">Generated with exreport - beta 0.4</a>
+    </div>
+  </div>
+</nav>
+
+    <div class="container">
+
+
+        <div class="row">
+
+             <div class="col-xs-1 visible-lg visible-md"></div>
+
+             <div class="col-md-10 document">
+              <div class="document-content">
+
+               <br>
+               <br>
+               <div class="text-center">
+                 <h1>Report</h1>
+                 <h3>2024-04-17</h3>
+               </div>
+               <br>
+               <hr>
+               <br>
+               <br>
+
+<!--
+Parameters:
+
+title, context, htmlTable, id, latexTable
+
+-->
+    <section id="elem_1_hook">
+    <div class="text-center">
+      <h2>Detailed results for output(s) "balanced_accuracy_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+
+    </br>
+    </br>
+
+    <div>
+      <div class="table-responsive">
+        
+<br/><br/>
+<table class="table table-hover">
+<tr>
+<tr>
+<th style="text-align:left">method</th><th style="text-align:right">balanced_accuracy_ava_ava</th><th style="text-align:right">balanced_accuracy_ava_aadb</th><th style="text-align:right">balanced_accuracy_aadb_ava</th><th style="text-align:right">balanced_accuracy_aadb_aadb</th></tr>
+<tr>
+<td style="text-align:left">kneighbours-19</td><td style="text-align:right">0.573</td><td style="text-align:right">0.533</td><td style="text-align:right">0.518</td><td style="text-align:right">0.545</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-5</td><td style="text-align:right">0.574</td><td style="text-align:right">0.547</td><td style="text-align:right">0.524</td><td style="text-align:right">0.584</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-9</td><td style="text-align:right">0.577</td><td style="text-align:right">0.549</td><td style="text-align:right">0.522</td><td style="text-align:right">0.544</td>
+</tr>
+<tr>
+<td style="text-align:left">logistic</td><td style="text-align:right">0.604</td><td style="text-align:right">0.542</td><td style="text-align:right">0.584</td><td style="text-align:right">0.621</td>
+</tr>
+<tr>
+<td style="text-align:left">naivebayes</td><td style="text-align:right">0.530</td><td style="text-align:right">0.516</td><td style="text-align:right">0.570</td><td style="text-align:right">0.509</td>
+</tr>
+<tr>
+<td style="text-align:left">rf</td><td style="text-align:right">0.601</td><td style="text-align:right"><strong>0.595</strong></td><td style="text-align:right">0.506</td><td style="text-align:right">0.572</td>
+</tr>
+<tr>
+<td style="text-align:left">svm</td><td style="text-align:right"><strong>0.614</strong></td><td style="text-align:right">0.552</td><td style="text-align:right"><strong>0.599</strong></td><td style="text-align:right"><strong>0.631</strong></td>
+</tr>
+</table>
+      </div>
+    </div>
+
+    </br>
+
+    <button class="btn btn-primary" type="button" data-toggle="collapse"
+     data-target="#elem_1_hidden" aria-expanded="false" aria-controls="collapseExample">
+      Show/Hide LaTeX Code
+    </button>
+    </br>
+    </br>
+    <div class="collapse" id="elem_1_hidden">
+      <pre id="elem_1_code">
+
+\begin{tabular}{lrrrr}
+\hline
+method & balanced_accuracy_ava_ava & balanced_accuracy_ava_aadb & balanced_accuracy_aadb_ava & balanced_accuracy_aadb_aadb\\
+\hline
+kneighbours-19 & 0.573 & 0.533 & 0.518 & 0.545\\
+kneighbours-5 & 0.574 & 0.547 & 0.524 & 0.584\\
+kneighbours-9 & 0.577 & 0.549 & 0.522 & 0.544\\
+logistic & 0.604 & 0.542 & 0.584 & 0.621\\
+naivebayes & 0.530 & 0.516 & 0.570 & 0.509\\
+rf & 0.601 & \bf 0.595 & 0.506 & 0.572\\
+svm & \bf 0.614 & 0.552 & \bf 0.599 & \bf 0.631\\
+\hline
+\end{tabular}
+</pre>
+    </br>
+      <button class="btn btn-success btn-sm" onclick="selectText('elem_1_code')">
+        Select Code
+      </button>
+    </div>
+
+    <br>
+    <br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, htmlTable, id, latexTable
+
+-->
+    <section id="elem_2_hook">
+    <div class="text-center">
+    <h2>Results for output "balanced_accuracy_test"</h2>
+    From experiment: <a href="#Report">Report</a>
+    </div>
+    </br>
+    </br>
+
+    <!-- Single button -->
+    <div class="text-center">
+      <div class="btn-group ">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Download <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a href="#" onclick="downloadFig('elem_2', '.eps')">EPS format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_2', '.pdf')">PDF format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_2', '.png')">PNG format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_2', '.svg')">SVG format</a></li>
+        </ul>
+      </div>
+      <br>
+      <br>
+      <img  src="./img/elem_2.svg" width="80%"/>
+    </div>
+
+    </br>
+    </br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, context, target, objetive, distribution, statistic, pvalue, alpha, outcome
+
+-->
+
+   <section id="elem_3_hook">
+    <div class="text-center">
+      <h2>Friedman Test for output "balanced_accuracy_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+    </br>
+
+    </br>
+    Friedman test for output balanced_accuracy_test </br>
+    <ul>
+        <li>H<sub>0</sub>: all methods being equivalent.</li>
+        <li>H<sub>1</sub>: at least one method is not equivalent.</li>
+    </ul>
+
+    <ul>
+        <li>Strategy for ranks: maximize</li>
+        <li>Computed Chi squared statistic with 6 degrees of freedom: 14.1428571428571</li>
+        <li>Computed p-value: 0.0280804489067057</li>
+        <li>Outcome for &alpha; = 0.05: H<sub>0</sub> <span class="label label-info">Rejected</span></li>
+    </ul>
+    </br>
+    </br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, context, scope, method, alpha, htmlTable, id, latexTable
+
+-->
+    <section id="elem_4_hook">
+    <div class="text-center">
+      <h2>Summary of pairwise post-hoc test for output "balanced_accuracy_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+
+    <ul>
+        <li>Test: Pairwise post-hoc test</li>
+        <li>Adjust Method: Shaffer</li>
+        <li>&alpha; = 0.05</li>
+        <li>Boldfaced results represent non-rejected hipotheses</li>
+    </ul>
+    </br>
+    </br>
+
+    <div>
+      <div class="table-responsive">
+        
+<br/><br/>
+<table class="table table-hover">
+<tr>
+<tr>
+<th style="text-align:left">method</th><th style="text-align:right">logistic</th><th style="text-align:right">rf</th><th style="text-align:right">kneighbours-5</th><th style="text-align:right">kneighbours-9</th><th style="text-align:right">kneighbours-19</th><th style="text-align:right">naivebayes</th></tr>
+<tr>
+<td style="text-align:left">svm</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>6.3400e-01</strong></td><td style="text-align:right"><strong>6.4395e-02</strong></td><td style="text-align:right">3.9341e-02</td>
+</tr>
+<tr>
+<td style="text-align:left">logistic</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>8.4209e-01</strong></td><td style="text-align:right"><strong>6.3400e-01</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">rf</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-5</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-9</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-19</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td>
+</tr>
+</table>
+      </div>
+    </div>
+
+    </br>
+
+    <button class="btn btn-primary" type="button" data-toggle="collapse"
+     data-target="#elem_4_hidden" aria-expanded="false" aria-controls="collapseExample">
+      Show/Hide LaTeX Code
+    </button>
+    </br>
+    </br>
+    <div class="collapse" id="elem_4_hidden">
+      <pre id="elem_4_code">
+
+\begin{tabular}{lrrrrrr}
+\hline
+method & logistic & rf & kneighbours-5 & kneighbours-9 & kneighbours-19 & naivebayes\\
+\hline
+svm & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 6.3400e-01 & \bf 6.4395e-02 & 3.9341e-02\\
+logistic & - & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 8.4209e-01 & \bf 6.3400e-01\\
+rf & - & - & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00\\
+kneighbours-5 & - & - & - & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00\\
+kneighbours-9 & - & - & - & - & \bf 1.0000e+00 & \bf 1.0000e+00\\
+kneighbours-19 & - & - & - & - & - & \bf 1.0000e+00\\
+\hline
+\end{tabular}
+</pre>
+    </br>
+      <button class="btn btn-success btn-sm" onclick="selectText('elem_4_code')">
+        Select Code
+      </button>
+    </div>
+    <br>
+    <br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, context, target, objetive, distribution, statistic, pvalue, alpha, outcome
+
+-->
+
+   <section id="elem_5_hook">
+    <div class="text-center">
+      <h2>Friedman Test for output "balanced_accuracy_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+    </br>
+
+    </br>
+    Friedman test for output balanced_accuracy_test </br>
+    <ul>
+        <li>H<sub>0</sub>: all methods being equivalent.</li>
+        <li>H<sub>1</sub>: at least one method is not equivalent.</li>
+    </ul>
+
+    <ul>
+        <li>Strategy for ranks: maximize</li>
+        <li>Computed Chi squared statistic with 6 degrees of freedom: 14.1428571428571</li>
+        <li>Computed p-value: 0.0280804489067057</li>
+        <li>Outcome for &alpha; = 0.05: H<sub>0</sub> <span class="label label-info">Rejected</span></li>
+    </ul>
+    </br>
+    </br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, context, scope, method, alpha, htmlTable, id, latexTable
+
+-->
+    <section id="elem_6_hook">
+    <div class="text-center">
+      <h2>Summary of Control post-hoc test for output "balanced_accuracy_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+
+    <ul>
+        <li>Test: Control post-hoc test</li>
+        <li>Adjust Method: Holm</li>
+        <li>&alpha; = 0.05</li>
+        <li>Boldfaced results represent non-rejected hipotheses</li>
+    </ul>
+    </br>
+    </br>
+
+    <div>
+      <div class="table-responsive">
+        
+<br/><br/>
+<table class="table table-hover">
+<tr>
+<tr>
+<th style="text-align:left">method</th><th style="text-align:right">rank</th><th style="text-align:right">pvalue</th><th style="text-align:right">win</th><th style="text-align:right">tie</th><th style="text-align:right">loss</th></tr>
+<tr>
+<td style="text-align:left">svm</td><td style="text-align:right">1.25</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td>
+</tr>
+<tr>
+<td style="text-align:left">logistic</td><td style="text-align:right">2.75</td><td style="text-align:right"><strong>3.2611e-01</strong></td><td style="text-align:right">4</td><td style="text-align:right">0</td><td style="text-align:right">0</td>
+</tr>
+<tr>
+<td style="text-align:left">rf</td><td style="text-align:right">3.75</td><td style="text-align:right"><strong>2.1544e-01</strong></td><td style="text-align:right">3</td><td style="text-align:right">0</td><td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-5</td><td style="text-align:right">4.00</td><td style="text-align:right"><strong>2.1544e-01</strong></td><td style="text-align:right">4</td><td style="text-align:right">0</td><td style="text-align:right">0</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-9</td><td style="text-align:right">4.50</td><td style="text-align:right"><strong>1.3347e-01</strong></td><td style="text-align:right">4</td><td style="text-align:right">0</td><td style="text-align:right">0</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-19</td><td style="text-align:right">5.75</td><td style="text-align:right">1.6099e-02</td><td style="text-align:right">4</td><td style="text-align:right">0</td><td style="text-align:right">0</td>
+</tr>
+<tr>
+<td style="text-align:left">naivebayes</td><td style="text-align:right">6.00</td><td style="text-align:right">1.1240e-02</td><td style="text-align:right">4</td><td style="text-align:right">0</td><td style="text-align:right">0</td>
+</tr>
+</table>
+      </div>
+    </div>
+
+    </br>
+
+    <button class="btn btn-primary" type="button" data-toggle="collapse"
+     data-target="#elem_6_hidden" aria-expanded="false" aria-controls="collapseExample">
+      Show/Hide LaTeX Code
+    </button>
+    </br>
+    </br>
+    <div class="collapse" id="elem_6_hidden">
+      <pre id="elem_6_code">
+
+\begin{tabular}{lrrrrr}
+\hline
+method & rank & pvalue & win & tie & loss\\
+\hline
+svm & 1.25 & - & - & - & -\\
+logistic & 2.75 & \bf 3.2611e-01 & 4 & 0 & 0\\
+rf & 3.75 & \bf 2.1544e-01 & 3 & 0 & 1\\
+kneighbours-5 & 4.00 & \bf 2.1544e-01 & 4 & 0 & 0\\
+kneighbours-9 & 4.50 & \bf 1.3347e-01 & 4 & 0 & 0\\
+kneighbours-19 & 5.75 & 1.6099e-02 & 4 & 0 & 0\\
+naivebayes & 6.00 & 1.1240e-02 & 4 & 0 & 0\\
+\hline
+\end{tabular}
+</pre>
+    </br>
+      <button class="btn btn-success btn-sm" onclick="selectText('elem_6_code')">
+        Select Code
+      </button>
+    </div>
+    <br>
+    <br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, htmlTable, id, latexTable
+
+-->
+    <section id="elem_7_hook">
+    <div class="text-center">
+    <h2>Distribution of ranks for output "balanced_accuracy_test"</h2>
+    From experiment: <a href="#Report">Report</a>
+    </div>
+    </br>
+    </br>
+
+    <!-- Single button -->
+    <div class="text-center">
+      <div class="btn-group ">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Download <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a href="#" onclick="downloadFig('elem_7', '.eps')">EPS format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_7', '.pdf')">PDF format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_7', '.png')">PNG format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_7', '.svg')">SVG format</a></li>
+        </ul>
+      </div>
+      <br>
+      <br>
+      <img  src="./img/elem_7.svg" width="80%"/>
+    </div>
+
+    </br>
+    </br>
+    </section>
+    <hr>
+<!--
+Parameters:
+
+r_version, index
+
+-->
+          </div>
+        </div> <!-- End Col -->
+
+        <div class="col-md-1 visible-lg" id="side-nav">
+            <ul class="nav nav-pills nav-stacked" data-spy="affix" data-offset-top="50">
+              
+<li><a href="#elem_1_hook"><strong>ExpSummaryTable:</strong>balanced_accuracy_test</a></li>
+<li><a href="#elem_2_hook"><strong>ExpSummaryPlot:</strong>balanced_accuracy_test</a></li>
+<li><a href="#elem_3_hook"><strong>TestMultiplePairwise:</strong>balanced_accuracy_test</a></li>
+<li><a href="#elem_4_hook"><strong>table:</strong>balanced_accuracy_test</a></li>
+<li><a href="#elem_5_hook"><strong>TestMultipleControl:</strong>balanced_accuracy_test</a></li>
+<li><a href="#elem_6_hook"><strong>TestSummaryTable:</strong>balanced_accuracy_test</a></li>
+<li><a href="#elem_7_hook"><strong>RankDistributionPlot:</strong>balanced_accuracy_test</a></li>
+            </ul>
+        </div>
+
+
+      </div> <!-- End Row -->
+    </div> <!-- End Container -->
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-12 text-center">
+          <br>
+          <br>
+        </div>
+      </div>
+
+      <div class="row">
+          <div class="col-md-12 text-center" style="background-color:black;">
+          <span class="text-center" style="color: #999;">
+            <br>
+            <h5>exreport, Copyright 2015 by Jacinto Arias and Javier Cozar</h5>
+            Generated using R version 4.1.1 (2021-08-10)
+            <br>
+            <br>
+          </span>
+          </div>
+      </div>
+    </div>
+
+    <script src="./assets/jquery.js"></script>
+    <script src="./assets/scripts.js"></script>
+    <script src="./assets/bootstrap.min.js"></script>
+
+</body>
+</html>

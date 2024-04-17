@@ -1,0 +1,495 @@
+<!--
+Parameters:
+
+title, date
+
+-->
+<html>
+
+<head>
+    <meta charset="UTF-8">
+
+    <link href="assets/bootstrap.min.css" rel="stylesheet" />
+
+    <title>Report</title>
+</head>
+
+<body data-spy="scroll" data-target="#side-nav" data-offset="350">
+
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="http://exreport.jarias.es">Generated with exreport - beta 0.4</a>
+    </div>
+  </div>
+</nav>
+
+    <div class="container">
+
+
+        <div class="row">
+
+             <div class="col-xs-1 visible-lg visible-md"></div>
+
+             <div class="col-md-10 document">
+              <div class="document-content">
+
+               <br>
+               <br>
+               <div class="text-center">
+                 <h1>Report</h1>
+                 <h3>2024-04-17</h3>
+               </div>
+               <br>
+               <hr>
+               <br>
+               <br>
+
+<!--
+Parameters:
+
+title, context, htmlTable, id, latexTable
+
+-->
+    <section id="elem_1_hook">
+    <div class="text-center">
+      <h2>Detailed results for output(s) "f1_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+
+    </br>
+    </br>
+
+    <div>
+      <div class="table-responsive">
+        
+<br/><br/>
+<table class="table table-hover">
+<tr>
+<tr>
+<th style="text-align:left">method</th><th style="text-align:right">f1_ava_ava</th><th style="text-align:right">f1_ava_aadb</th><th style="text-align:right">f1_aadb_ava</th><th style="text-align:right">f1_aadb_aadb</th></tr>
+<tr>
+<td style="text-align:left">kneighbours-19</td><td style="text-align:right"><strong>0.655</strong></td><td style="text-align:right">0.617</td><td style="text-align:right">0.828</td><td style="text-align:right">0.651</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-5</td><td style="text-align:right">0.644</td><td style="text-align:right">0.616</td><td style="text-align:right">0.827</td><td style="text-align:right">0.665</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-9</td><td style="text-align:right">0.653</td><td style="text-align:right">0.626</td><td style="text-align:right">0.826</td><td style="text-align:right">0.642</td>
+</tr>
+<tr>
+<td style="text-align:left">logistic</td><td style="text-align:right">0.416</td><td style="text-align:right">0.332</td><td style="text-align:right"><strong>0.835</strong></td><td style="text-align:right">0.601</td>
+</tr>
+<tr>
+<td style="text-align:left">naivebayes</td><td style="text-align:right">0.130</td><td style="text-align:right">0.117</td><td style="text-align:right">0.282</td><td style="text-align:right">0.034</td>
+</tr>
+<tr>
+<td style="text-align:left">rf</td><td style="text-align:right">0.558</td><td style="text-align:right"><strong>0.629</strong></td><td style="text-align:right">0.831</td><td style="text-align:right"><strong>0.704</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">svm</td><td style="text-align:right">0.448</td><td style="text-align:right">0.378</td><td style="text-align:right">0.828</td><td style="text-align:right">0.595</td>
+</tr>
+</table>
+      </div>
+    </div>
+
+    </br>
+
+    <button class="btn btn-primary" type="button" data-toggle="collapse"
+     data-target="#elem_1_hidden" aria-expanded="false" aria-controls="collapseExample">
+      Show/Hide LaTeX Code
+    </button>
+    </br>
+    </br>
+    <div class="collapse" id="elem_1_hidden">
+      <pre id="elem_1_code">
+
+\begin{tabular}{lrrrr}
+\hline
+method & f1_ava_ava & f1_ava_aadb & f1_aadb_ava & f1_aadb_aadb\\
+\hline
+kneighbours-19 & \bf 0.655 & 0.617 & 0.828 & 0.651\\
+kneighbours-5 & 0.644 & 0.616 & 0.827 & 0.665\\
+kneighbours-9 & 0.653 & 0.626 & 0.826 & 0.642\\
+logistic & 0.416 & 0.332 & \bf 0.835 & 0.601\\
+naivebayes & 0.130 & 0.117 & 0.282 & 0.034\\
+rf & 0.558 & \bf 0.629 & 0.831 & \bf 0.704\\
+svm & 0.448 & 0.378 & 0.828 & 0.595\\
+\hline
+\end{tabular}
+</pre>
+    </br>
+      <button class="btn btn-success btn-sm" onclick="selectText('elem_1_code')">
+        Select Code
+      </button>
+    </div>
+
+    <br>
+    <br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, htmlTable, id, latexTable
+
+-->
+    <section id="elem_2_hook">
+    <div class="text-center">
+    <h2>Results for output "f1_test"</h2>
+    From experiment: <a href="#Report">Report</a>
+    </div>
+    </br>
+    </br>
+
+    <!-- Single button -->
+    <div class="text-center">
+      <div class="btn-group ">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Download <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a href="#" onclick="downloadFig('elem_2', '.eps')">EPS format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_2', '.pdf')">PDF format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_2', '.png')">PNG format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_2', '.svg')">SVG format</a></li>
+        </ul>
+      </div>
+      <br>
+      <br>
+      <img  src="./img/elem_2.svg" width="80%"/>
+    </div>
+
+    </br>
+    </br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, context, target, objetive, distribution, statistic, pvalue, alpha, outcome
+
+-->
+
+   <section id="elem_3_hook">
+    <div class="text-center">
+      <h2>Friedman Test for output "f1_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+    </br>
+
+    </br>
+    Friedman test for output f1_test </br>
+    <ul>
+        <li>H<sub>0</sub>: all methods being equivalent.</li>
+        <li>H<sub>1</sub>: at least one method is not equivalent.</li>
+    </ul>
+
+    <ul>
+        <li>Strategy for ranks: maximize</li>
+        <li>Computed Chi squared statistic with 6 degrees of freedom: 13.6071428571429</li>
+        <li>Computed p-value: 0.0343460774009168</li>
+        <li>Outcome for &alpha; = 0.05: H<sub>0</sub> <span class="label label-info">Rejected</span></li>
+    </ul>
+    </br>
+    </br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, context, scope, method, alpha, htmlTable, id, latexTable
+
+-->
+    <section id="elem_4_hook">
+    <div class="text-center">
+      <h2>Summary of pairwise post-hoc test for output "f1_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+
+    <ul>
+        <li>Test: Pairwise post-hoc test</li>
+        <li>Adjust Method: Shaffer</li>
+        <li>&alpha; = 0.05</li>
+        <li>Boldfaced results represent non-rejected hipotheses</li>
+    </ul>
+    </br>
+    </br>
+
+    <div>
+      <div class="table-responsive">
+        
+<br/><br/>
+<table class="table table-hover">
+<tr>
+<tr>
+<th style="text-align:left">method</th><th style="text-align:right">kneighbours-19</th><th style="text-align:right">kneighbours-5</th><th style="text-align:right">kneighbours-9</th><th style="text-align:right">logistic</th><th style="text-align:right">svm</th><th style="text-align:right">naivebayes</th></tr>
+<tr>
+<td style="text-align:left">rf</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right">2.2325e-02</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-19</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0796e-01</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-5</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>4.1699e-01</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-9</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>4.1699e-01</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">logistic</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td><td style="text-align:right"><strong>1.0000e+00</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">svm</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right"><strong>1.0000e+00</strong></td>
+</tr>
+</table>
+      </div>
+    </div>
+
+    </br>
+
+    <button class="btn btn-primary" type="button" data-toggle="collapse"
+     data-target="#elem_4_hidden" aria-expanded="false" aria-controls="collapseExample">
+      Show/Hide LaTeX Code
+    </button>
+    </br>
+    </br>
+    <div class="collapse" id="elem_4_hidden">
+      <pre id="elem_4_code">
+
+\begin{tabular}{lrrrrrr}
+\hline
+method & kneighbours-19 & kneighbours-5 & kneighbours-9 & logistic & svm & naivebayes\\
+\hline
+rf & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & 2.2325e-02\\
+kneighbours-19 & - & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0796e-01\\
+kneighbours-5 & - & - & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 4.1699e-01\\
+kneighbours-9 & - & - & - & \bf 1.0000e+00 & \bf 1.0000e+00 & \bf 4.1699e-01\\
+logistic & - & - & - & - & \bf 1.0000e+00 & \bf 1.0000e+00\\
+svm & - & - & - & - & - & \bf 1.0000e+00\\
+\hline
+\end{tabular}
+</pre>
+    </br>
+      <button class="btn btn-success btn-sm" onclick="selectText('elem_4_code')">
+        Select Code
+      </button>
+    </div>
+    <br>
+    <br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, context, target, objetive, distribution, statistic, pvalue, alpha, outcome
+
+-->
+
+   <section id="elem_5_hook">
+    <div class="text-center">
+      <h2>Friedman Test for output "f1_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+    </br>
+
+    </br>
+    Friedman test for output f1_test </br>
+    <ul>
+        <li>H<sub>0</sub>: all methods being equivalent.</li>
+        <li>H<sub>1</sub>: at least one method is not equivalent.</li>
+    </ul>
+
+    <ul>
+        <li>Strategy for ranks: maximize</li>
+        <li>Computed Chi squared statistic with 6 degrees of freedom: 13.6071428571429</li>
+        <li>Computed p-value: 0.0343460774009168</li>
+        <li>Outcome for &alpha; = 0.05: H<sub>0</sub> <span class="label label-info">Rejected</span></li>
+    </ul>
+    </br>
+    </br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, context, scope, method, alpha, htmlTable, id, latexTable
+
+-->
+    <section id="elem_6_hook">
+    <div class="text-center">
+      <h2>Summary of Control post-hoc test for output "f1_test"</h2>
+      From experiment: <a href="#Report">Report</a>
+    </div>
+
+    <ul>
+        <li>Test: Control post-hoc test</li>
+        <li>Adjust Method: Holm</li>
+        <li>&alpha; = 0.05</li>
+        <li>Boldfaced results represent non-rejected hipotheses</li>
+    </ul>
+    </br>
+    </br>
+
+    <div>
+      <div class="table-responsive">
+        
+<br/><br/>
+<table class="table table-hover">
+<tr>
+<tr>
+<th style="text-align:left">method</th><th style="text-align:right">rank</th><th style="text-align:right">pvalue</th><th style="text-align:right">win</th><th style="text-align:right">tie</th><th style="text-align:right">loss</th></tr>
+<tr>
+<td style="text-align:left">rf</td><td style="text-align:right">2.00</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td><td style="text-align:right">-</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-19</td><td style="text-align:right">2.75</td><td style="text-align:right"><strong>9.7833e-01</strong></td><td style="text-align:right">3</td><td style="text-align:right">0</td><td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-5</td><td style="text-align:right">3.50</td><td style="text-align:right"><strong>9.7833e-01</strong></td><td style="text-align:right">3</td><td style="text-align:right">0</td><td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:left">kneighbours-9</td><td style="text-align:right">3.50</td><td style="text-align:right"><strong>9.7833e-01</strong></td><td style="text-align:right">3</td><td style="text-align:right">0</td><td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:left">logistic</td><td style="text-align:right">4.50</td><td style="text-align:right"><strong>4.0683e-01</strong></td><td style="text-align:right">3</td><td style="text-align:right">0</td><td style="text-align:right">1</td>
+</tr>
+<tr>
+<td style="text-align:left">svm</td><td style="text-align:right">4.75</td><td style="text-align:right"><strong>3.5907e-01</strong></td><td style="text-align:right">4</td><td style="text-align:right">0</td><td style="text-align:right">0</td>
+</tr>
+<tr>
+<td style="text-align:left">naivebayes</td><td style="text-align:right">7.00</td><td style="text-align:right">6.3787e-03</td><td style="text-align:right">4</td><td style="text-align:right">0</td><td style="text-align:right">0</td>
+</tr>
+</table>
+      </div>
+    </div>
+
+    </br>
+
+    <button class="btn btn-primary" type="button" data-toggle="collapse"
+     data-target="#elem_6_hidden" aria-expanded="false" aria-controls="collapseExample">
+      Show/Hide LaTeX Code
+    </button>
+    </br>
+    </br>
+    <div class="collapse" id="elem_6_hidden">
+      <pre id="elem_6_code">
+
+\begin{tabular}{lrrrrr}
+\hline
+method & rank & pvalue & win & tie & loss\\
+\hline
+rf & 2.00 & - & - & - & -\\
+kneighbours-19 & 2.75 & \bf 9.7833e-01 & 3 & 0 & 1\\
+kneighbours-5 & 3.50 & \bf 9.7833e-01 & 3 & 0 & 1\\
+kneighbours-9 & 3.50 & \bf 9.7833e-01 & 3 & 0 & 1\\
+logistic & 4.50 & \bf 4.0683e-01 & 3 & 0 & 1\\
+svm & 4.75 & \bf 3.5907e-01 & 4 & 0 & 0\\
+naivebayes & 7.00 & 6.3787e-03 & 4 & 0 & 0\\
+\hline
+\end{tabular}
+</pre>
+    </br>
+      <button class="btn btn-success btn-sm" onclick="selectText('elem_6_code')">
+        Select Code
+      </button>
+    </div>
+    <br>
+    <br>
+    </section>
+    <hr>
+
+<!--
+Parameters:
+
+title, htmlTable, id, latexTable
+
+-->
+    <section id="elem_7_hook">
+    <div class="text-center">
+    <h2>Distribution of ranks for output "f1_test"</h2>
+    From experiment: <a href="#Report">Report</a>
+    </div>
+    </br>
+    </br>
+
+    <!-- Single button -->
+    <div class="text-center">
+      <div class="btn-group ">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Download <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+            <li><a href="#" onclick="downloadFig('elem_7', '.eps')">EPS format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_7', '.pdf')">PDF format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_7', '.png')">PNG format</a></li>
+            <li><a href="#" onclick="downloadFig('elem_7', '.svg')">SVG format</a></li>
+        </ul>
+      </div>
+      <br>
+      <br>
+      <img  src="./img/elem_7.svg" width="80%"/>
+    </div>
+
+    </br>
+    </br>
+    </section>
+    <hr>
+<!--
+Parameters:
+
+r_version, index
+
+-->
+          </div>
+        </div> <!-- End Col -->
+
+        <div class="col-md-1 visible-lg" id="side-nav">
+            <ul class="nav nav-pills nav-stacked" data-spy="affix" data-offset-top="50">
+              
+<li><a href="#elem_1_hook"><strong>ExpSummaryTable:</strong>f1_test</a></li>
+<li><a href="#elem_2_hook"><strong>ExpSummaryPlot:</strong>f1_test</a></li>
+<li><a href="#elem_3_hook"><strong>TestMultiplePairwise:</strong>f1_test</a></li>
+<li><a href="#elem_4_hook"><strong>table:</strong>f1_test</a></li>
+<li><a href="#elem_5_hook"><strong>TestMultipleControl:</strong>f1_test</a></li>
+<li><a href="#elem_6_hook"><strong>TestSummaryTable:</strong>f1_test</a></li>
+<li><a href="#elem_7_hook"><strong>RankDistributionPlot:</strong>f1_test</a></li>
+            </ul>
+        </div>
+
+
+      </div> <!-- End Row -->
+    </div> <!-- End Container -->
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-12 text-center">
+          <br>
+          <br>
+        </div>
+      </div>
+
+      <div class="row">
+          <div class="col-md-12 text-center" style="background-color:black;">
+          <span class="text-center" style="color: #999;">
+            <br>
+            <h5>exreport, Copyright 2015 by Jacinto Arias and Javier Cozar</h5>
+            Generated using R version 4.1.1 (2021-08-10)
+            <br>
+            <br>
+          </span>
+          </div>
+      </div>
+    </div>
+
+    <script src="./assets/jquery.js"></script>
+    <script src="./assets/scripts.js"></script>
+    <script src="./assets/bootstrap.min.js"></script>
+
+</body>
+</html>

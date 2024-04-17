@@ -218,7 +218,6 @@ class ProbTagging(PUAlgorithm):
         unlabeled_knn_indices = indices[unlabeled_samples]
         indices_labels = np.vectorize(lambda x: y[x])(unlabeled_knn_indices)
         credibility_scores = np.mean(indices_labels, axis=1)
-        print(credibility_scores, np.max(credibility_scores), np.min(credibility_scores), np.mean(credibility_scores))
 
         # Get "num_classifiers" datasets and train a model on each one of them
         self.classifiers = []
@@ -466,4 +465,4 @@ class IterativeClassifierAlgorithm(TwoStepAlgorithm):
         ----------
         X: the examples to get the probabilities for
         '''
-        return self.classifier.predict_proba(X)
+        return self.classifier.predict_proba(X)[:,1]
