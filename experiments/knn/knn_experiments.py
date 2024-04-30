@@ -30,7 +30,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 
-def ava_splits(features_dict, extractor, quantile):
+def ava_splits(features_dict, extractor, quantile, seed):
     features = features_dict[f"{extractor}__ava"]
     
     X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu = build_pu_data(
@@ -42,7 +42,7 @@ def ava_splits(features_dict, extractor, quantile):
         reliable_positive_fn=lambda row, df: row['VotesMean'] > quantile,
         positive_fn=lambda row, df: row['VotesMean'] >= 5.0,
         test_frac=0.2,
-        random_state=1234
+        random_state=seed
     )
 
     return X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu
@@ -87,7 +87,7 @@ def aadb_splits(features_dict, extractor, quantile):
     return X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu
 
 # LAION-AES 6.5 is considered to only contain highly-aesthetic images. No need for unlabeled examples.
-def laion_splits(features_dict, extractor, quantile):
+def laion_splits(features_dict, extractor, quantile, seed):
     features = features_dict[f"{extractor}__laion_aes"]
 
     X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu = build_pu_data(
@@ -99,7 +99,7 @@ def laion_splits(features_dict, extractor, quantile):
         reliable_positive_fn=lambda row, df: row['AESTHETIC_SCORE'] > 5.0,
         positive_fn=lambda row, df: row['AESTHETIC_SCORE'] >= 5.0,
         test_frac=0.2,
-        random_state=1234
+        random_state=seed
     )
 
     return X_train, X_val, X_test, y_train, y_val, y_test, y_test_pu
@@ -135,16 +135,16 @@ def full_aadb_test(features_dict, extractor, quantile):
     return _, _, X_test, _, _, y_test, y_test_pu
 
 def get_laion_train_func(train_ds_func):
-    def train_func(features_dict, extractor, quantile):
-        laion_train, laion_val, laion_test, _, _, _, _ = laion_splits(features_dict, extractor, quantile)
+    def train_func(features_dict, extractor, quantile, seed):
+        laion_train, laion_val, laion_test, _, _, _, _ = laion_splits(features_dict, extractor, quantile, seed)
         laion_full = np.concatenate([laion_train, laion_val, laion_test], axis=0)
         
-        other_train, other_val, _, _, _, _, _ = train_ds_func(features_dict, extractor, quantile)
+        other_train, other_val, _, _, _, _, _ = train_ds_func(features_dict, extractor, quantile, seed)
         other_full = np.concatenate([other_train, other_val], axis=0)
         
         ds_full = np.concatenate([laion_full, other_full], axis=0)
         labels = np.concatenate([np.ones(len(laion_full)), np.zeros(len(other_full))])
-        X_train, X_val, y_train, y_val = train_test_split(ds_full, labels, test_size=0.2, random_state=1234, shuffle=True, stratify=labels)
+        X_train, X_val, y_train, y_val = train_test_split(ds_full, labels, test_size=0.2, random_state=seed, shuffle=True, stratify=labels)
 	
         return X_train, X_val, None, y_train, y_val, None, None
 	
@@ -168,45 +168,46 @@ def create_iterative(detector, classifer, classifier_kwargs):
 
 
 def run_experiment(features, train_ds_func, test_ds_func, exp_name, extractors, relpos, classifiers_and_args, neg_detectors):
-    extractor_col, reliablepos_col, classifier_col, detector_col, bal_acc_col, acc_col, f1_col, aul_col = [], [], [], [], [], [], [], []
+    extractor_col, reliablepos_col, classifier_col, detector_col, seed_col, bal_acc_col, acc_col, f1_col, aul_col = [], [], [], [], [], [], [], [], []
     y_true_col, y_pred_col = [], []
 
     exp_file = f"{exp_name}_results.csv"
-    #if os.path.exists(exp_file):
-        #return
 
     for extractor in extractors:
         for relpos_thresh in relpos:
             for cls in classifiers_and_args:
                 for detector in neg_detectors:
-                    X_train, X_val, _, y_train, y_val, _, _ = train_ds_func(features, extractor, relpos_thresh)
-                    negative_detector = neg_detectors[detector][0](**neg_detectors[detector][1])
-                    classifier = create_iterative(negative_detector, *classifiers_and_args[cls])
-                    classifier.fit(X_train, y_train, X_val, y_val)
-                    y_pred = classifier.predict(X_val)
-                    y_true_col.append(y_val.tolist())
-                    y_pred_col.append(classifier.predict_proba(X_val).tolist())
-                    
-                    bal_acc = balanced_accuracy_score(y_val, y_pred)
-                    acc = accuracy_score(y_val, y_pred)
-                    f1 = f1_score(y_val, y_pred)
-                    aul = aul_pu(y_val, y_pred)
+                    for seed in range(10):
+                        X_train, X_val, _, y_train, y_val, _, _ = train_ds_func(features, extractor, relpos_thresh, seed)
+                        negative_detector = neg_detectors[detector][0](**neg_detectors[detector][1])
+                        classifier = create_iterative(negative_detector, *classifiers_and_args[cls])
+                        classifier.fit(X_train, y_train, X_val, y_val)
+                        y_pred = classifier.predict(X_val)
+                        y_true_col.append(y_val.tolist())
+                        y_pred_col.append(classifier.predict_proba(X_val).tolist())
+                        
+                        bal_acc = balanced_accuracy_score(y_val, y_pred)
+                        acc = accuracy_score(y_val, y_pred)
+                        f1 = f1_score(y_val, y_pred)
+                        aul = aul_pu(y_val, y_pred)
 
-                    extractor_col.append(extractor)
-                    reliablepos_col.append(relpos_thresh)
-                    classifier_col.append(cls)
-                    detector_col.append(detector)
-                    bal_acc_col.append(bal_acc)
-                    acc_col.append(acc)
-                    f1_col.append(f1)
-                    aul_col.append(aul)
-                    gc.collect()
+                        extractor_col.append(extractor)
+                        reliablepos_col.append(relpos_thresh)
+                        classifier_col.append(cls)
+                        detector_col.append(detector)
+                        seed_col.append(seed)
+                        bal_acc_col.append(bal_acc)
+                        acc_col.append(acc)
+                        f1_col.append(f1)
+                        aul_col.append(aul)
+                        gc.collect()
 
     df = pd.DataFrame.from_dict({
         'extractor': extractor_col,
         'reliable_positive_threshold': reliablepos_col,
         'classifier': classifier_col,
         'detector': detector_col,
+        'seed': seed_col,
         'balanced_accuracy': bal_acc_col,
         'accuracy': acc_col,
         'f1': f1_col,
@@ -226,20 +227,15 @@ def run_all_experiments(features):
     classifiers = {
         'logistic': (LogisticRegression, {'max_iter':10000, 'n_jobs':-1, 'random_state':1234}),
     }
-    
-    negative_detectors = {
-        f'knn-{k}': (KNNDetector, {'frac': 0.1, 'k': k}) for k in range(5, 201, 5)
-    }
 
-    negative_detectors_small_k = {
-        f'knn-{k}': (KNNDetector, {'frac': 0.1, 'k': k}) for k in range(1, 5)
+    negative_detectors = {
+        f'knn-{k}': (KNNDetector, {'frac': 0.1, 'k': k}) for k in [9, 13, 15, 17, 21]
     }
     
     extractors = ['clip-ViT-L-14']
 
     # kNN experiments
     run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava_knn_selection', extractors, [0.5], classifiers, negative_detectors)
-    run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava_knn_selection_small', extractors, [0.5], classifiers, negative_detectors_small_k)
 
 
 def drop_not_features(df):

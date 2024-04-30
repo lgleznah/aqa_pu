@@ -13,10 +13,10 @@ def main():
 
     plot = sns.lineplot(x=negative_detectors, y=balaccs)
 
-    plot.set_ylim([0.6, 0.62])
+    plot.set_ylim([0.0, 1.0])
     plot.set_xlabel("Value of $k$")
     plot.set_ylabel("Balanced accuracy")
-    plot.set_yticks([0.6, 0.61, 0.62])
+    plot.set_yticks([x / 10 for x in range(0, 11, 1)])
 
     fig = plot.get_figure()
     fig.savefig("knn_plot.pdf") 
