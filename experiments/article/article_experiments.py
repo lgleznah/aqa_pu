@@ -223,7 +223,7 @@ def create_classifer(cls_name):
     match cls_name:
         case 'tsa':
             return create_iterative(
-                KNNDetector(frac=0.1, k=90),
+                KNNDetector(frac=0.1, k=1),
                 LogisticRegression,
                 {'max_iter':10000, 'n_jobs':-1, 'random_state':1234}
             )
@@ -427,6 +427,7 @@ def run_all_experiments(features):
     # AVA and AADB quantiles
     ava_quantiles =  [5.386517, 5.475771, 5.566116, 5.660284, 5.758871, 5.865385, 5.987416, 6.129032, 6.307692, 6.574194]
     aadb_quantiles = [0.5, 0.55, 0.55, 0.6, 0.6, 0.65, 0.65, 0.7, 0.75, 0.8]
+    laion_quantiles = [0.5]
 
     classifiers = ['nnpu', 'pt', 'tsa']
     
@@ -434,12 +435,18 @@ def run_all_experiments(features):
     #run_baseline_experiments(features, classifiers)
     #return
 
-    # Not-LAION two-step experiments
+    # Not-LAION experiments
     run_experiment(features, ava_splits, ava_splits, 'ava_ava', ava_quantiles, ava_quantiles, classifiers)
     run_experiment(features, ava_splits, aadb_splits, 'ava_aadb', ava_quantiles, aadb_quantiles, classifiers)
     run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb', aadb_quantiles, aadb_quantiles, classifiers)
     run_experiment(features, aadb_splits, ava_splits, 'aadb_ava', aadb_quantiles, ava_quantiles, classifiers)
     
+    # LAION experiments
+    run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava', laion_quantiles, [5.0], classifiers)
+    run_experiment(features, get_laion_train_func(ava_splits), aadb_splits, 'laion+ava_aadb', laion_quantiles, [0.5], classifiers)
+    run_experiment(features, get_laion_train_func(aadb_splits), ava_splits, 'laion+aadb_ava', laion_quantiles, [5.0], classifiers)
+    run_experiment(features, get_laion_train_func(aadb_splits), aadb_splits, 'laion+aadb_aadb', laion_quantiles, [0.5], classifiers)
+
 
 def drop_not_features(df):
     drop_columns = [col_name for col_name in df.columns if "__feature__" not in col_name]
