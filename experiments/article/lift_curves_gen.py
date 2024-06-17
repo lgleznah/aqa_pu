@@ -16,7 +16,7 @@ brief_cls_names = {
     'tsa': 'Two-step algorithm'
 }
 
-matplotlib.rcParams.update({'font.size': 15})
+matplotlib.rcParams.update({'font.size': 12})
 
 def get_xy_points(df: pd.DataFrame, exp_idx: int) -> tuple[list[float], list[float]]:
     y_pred = np.asarray(np.matrix(df[['y_pred']].values[exp_idx,0])).squeeze()
@@ -27,12 +27,12 @@ def get_xy_points(df: pd.DataFrame, exp_idx: int) -> tuple[list[float], list[flo
 
 
 def main():
-    setting_names = ["ava_ava", "ava_aadb", "aadb_ava", "aadb_aadb"]
+    setting_names = ["laion+ava_ava", "laion+ava_aadb", "laion+aadb_ava", "laion+aadb_aadb"]
     for setting_name in setting_names:
 
         df = pd.read_csv(f'{setting_name}_results.csv')
         df['classifier'] = df['classifier'].map(brief_cls_names)
-        df = df[df['percentile_threshold'] == 0.95]
+        df = df[df['percentile_threshold'] == 0.5]
         clasifiers = df["classifier"].unique()
 
         for idx, cls in enumerate(clasifiers):
@@ -40,13 +40,13 @@ def main():
             plt.plot(x_points, y_points, label=cls)
 
         plt.plot([0,1], [0,1], linestyle='--', c='black')
-        plt.xlabel("$Y_{rate}$")
-        plt.ylabel("$tpr$")
+        plt.xlabel("$Y_{rate}$", fontdict={'fontsize': 15})
+        plt.ylabel("$tpr$", fontdict={'fontsize': 15})
         plt.xlim([0, 1])
         plt.ylim([0, 1])
-        plt.tight_layout()
-        plt.title(f"{setting_name.split('_')[0].upper()} train, {setting_name.split('_')[1].upper()} test")
+        plt.title(f"{setting_name.split('_')[0].upper()} train, {setting_name.split('_')[1].upper()} test", fontdict={'fontsize': 20})
         plt.legend()
+        #plt.tight_layout()
         plt.savefig(f'{setting_name}_liftcurve.pdf')
 
         plt.close()    

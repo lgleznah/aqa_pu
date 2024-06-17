@@ -244,7 +244,7 @@ class ProbTagging(PUAlgorithm):
         X: the examples to get the predictions for
         '''
         predictions = [classifier.predict(X) for classifier in self.classifiers]
-        return (np.mean(predictions, axis=0) > self.positive_prior).astype(int)
+        return (np.mean(predictions, axis=0) > 0.5).astype(int)
     
     def predict_proba(self, X):
         '''
