@@ -58,7 +58,7 @@ def main() -> None:
             plt.ylim([0, 1])
             plt.legend()
             plt.ylabel(metric.capitalize().replace('_', ' '), fontdict={'fontsize': 15})
-            plt.xlabel("Score percentile thresold", fontdict={'fontsize': 15})
+            plt.xlabel("Score percentile threshold", fontdict={'fontsize': 15})
             plt.title(f"{setting_name.split('_')[0].upper()} train, {setting_name.split('_')[1].upper()} test", fontdict={'fontsize': 20})
             plt.savefig(f"{setting_name}_{metric}.pdf")
             plt.close()

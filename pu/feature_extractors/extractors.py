@@ -5,7 +5,8 @@ import numpy as np
 
 try:
     from sentence_transformers import SentenceTransformer
-    from PIL import Image
+    from PIL import Image, ImageFile
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
 except:
     pass
 
@@ -155,6 +156,12 @@ class ViTExtractor(Extractor):
         self.filename = f'vit_name_{extractor_name}'
         self.extractor_name = extractor_name
 
+    def _enforce_no_single_pixel(self, image):
+        np_image = np.array(image)
+        if (np_image.shape[0] == 1 or np_image.shape[1] == 1):
+            return Image.fromarray(np.zeros((2,2,3), dtype=np.uint8))
+        return image
+
     def _extract_features(self, images):
         '''
         Use the ViT to extract features
@@ -164,7 +171,7 @@ class ViTExtractor(Extractor):
 
         features = []
         for chunk in tqdm(chunks_positive):
-            images = [Image.open(img) for img in chunk]
+            images = [self._enforce_no_single_pixel(Image.open(img).convert("RGB")) for img in chunk]
             features.extend(extractor.encode(images, batch_size=32))
         
         features = np.array(features)

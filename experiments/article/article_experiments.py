@@ -358,7 +358,7 @@ def run_all_experiments(features):
     # AVA and AADB quantiles
     ava_quantiles =  [5.386517, 5.475771, 5.566116, 5.660284, 5.758871, 5.865385, 5.987416, 6.129032, 6.307692, 6.574194]
     aadb_quantiles = [0.5, 0.55, 0.55, 0.6, 0.6, 0.65, 0.65, 0.7, 0.75, 0.8]
-    laion_quantiles = [5.0, 6.515469789505005, 6.532570552825928, 6.551862907409668, 6.57332124710083, 6.5983641147613525, 6.629027462005615, 6.66780834197998, 6.720008182525635, 6.808042287826538]
+    laion_quantiles = [6.92, 5.0, 6.515469789505005, 6.532570552825928, 6.551862907409668, 6.57332124710083, 6.5983641147613525, 6.629027462005615, 6.66780834197998, 6.720008182525635, 6.808042287826538]
 
     ava_aadb_percentiles = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
     laion_percentiles = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -366,34 +366,29 @@ def run_all_experiments(features):
     classifiers = ['nnpu', 'pt', 'tsa']
     pn_classifiers = ['logistic', 'hgbc']
     
-    # Baselines
-    #run_baseline_experiments(features, classifiers)
-    #return
 
     # Baseline, non-LAION experiments
-    #run_experiment(features, ava_splits, ava_splits, 'ava_ava_baseline', [5.0] + ava_quantiles, [5.0] + ava_quantiles, pn_classifiers)
-    #run_experiment(features, ava_splits, aadb_splits, 'ava_aadb_baseline', [5.0] + ava_quantiles, [0.5] + aadb_quantiles, pn_classifiers)
-    #run_experiment(features, aadb_splits, ava_splits, 'aadb_ava_baseline', [0.5] + aadb_quantiles, [5.0] + ava_quantiles, pn_classifiers)
-    #run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb_baseline', [0.5] + aadb_quantiles, [0.5] + aadb_quantiles, pn_classifiers)
+    run_experiment(features, ava_splits, ava_splits, 'ava_ava_baseline', [5.0] + ava_quantiles, [5.0] + ava_quantiles, pn_classifiers)
+    run_experiment(features, ava_splits, aadb_splits, 'ava_aadb_baseline', [5.0] + ava_quantiles, [0.5] + aadb_quantiles, pn_classifiers)
+    run_experiment(features, aadb_splits, ava_splits, 'aadb_ava_baseline', [0.5] + aadb_quantiles, [5.0] + ava_quantiles, pn_classifiers)
+    run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb_baseline', [0.5] + aadb_quantiles, [0.5] + aadb_quantiles, pn_classifiers)
 
     # Not-LAION experiments
-    #run_experiment(features, ava_splits, ava_splits, 'ava_ava', ava_quantiles, ava_quantiles, classifiers)
-    #run_experiment(features, ava_splits, aadb_splits, 'ava_aadb', ava_quantiles, aadb_quantiles, classifiers)
-    #run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb', aadb_quantiles, aadb_quantiles, classifiers)
-    #run_experiment(features, aadb_splits, ava_splits, 'aadb_ava', aadb_quantiles, ava_quantiles, classifiers)
+    run_experiment(features, ava_splits, ava_splits, 'ava_ava', ava_quantiles, ava_quantiles, classifiers)
+    run_experiment(features, ava_splits, aadb_splits, 'ava_aadb', ava_quantiles, aadb_quantiles, classifiers)
+    run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb', aadb_quantiles, aadb_quantiles, classifiers)
+    run_experiment(features, aadb_splits, ava_splits, 'aadb_ava', aadb_quantiles, ava_quantiles, classifiers)
     
     # LAION experiments
-    run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
-    run_experiment(features, get_laion_train_func(ava_splits), aadb_splits, 'laion+ava_aadb', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
-    run_experiment(features, get_laion_train_func(aadb_splits), ava_splits, 'laion+aadb_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
-    run_experiment(features, get_laion_train_func(aadb_splits), aadb_splits, 'laion+aadb_aadb', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
+    #run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
+    #run_experiment(features, get_laion_train_func(ava_splits), aadb_splits, 'laion+ava_aadb', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
+    #run_experiment(features, get_laion_train_func(aadb_splits), ava_splits, 'laion+aadb_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
+    #run_experiment(features, get_laion_train_func(aadb_splits), aadb_splits, 'laion+aadb_aadb', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
 
 
 def drop_not_features(df):
     drop_columns = [col_name for col_name in df.columns if "__feature__" not in col_name]
     return df.drop(columns=drop_columns)
-
-import shutil
 
 def main():
     extractors = ['clip-ViT-B-32', 'clip-ViT-B-16', 'clip-ViT-L-14']
@@ -417,17 +412,6 @@ def main():
             path_col = dataset_params[dataset][1]
             data = loader.load_data()
             features = feature_extractor.extract_features(data[path_col])
-
-            '''
-            if (extractor == 'clip-ViT-L-14'):
-                negatives = np.load('image_examples/positives/positives.npy')
-                features_np = drop_not_features(features).to_numpy()
-                for i in range(negatives.shape[0]):
-                    for j in range(features.shape[0]):
-                        if np.array_equal(negatives[i,:], features_np[j,:]):
-                            print(data.iloc[j]['id'], data.iloc[j]['VotesMean'])
-                            shutil.copy2(data.iloc[j]['id'], 'image_examples/positives')
-            '''
 
             df = pd.concat([data.drop(columns=[path_col]), features.drop(columns=["id"])], axis=1)
             all_features[featureset_name] = df

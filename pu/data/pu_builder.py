@@ -10,15 +10,21 @@ def negate(f):
     g.__name__ = f'negate({f.__name__})'
     return g
 
-def drop_not_features(df):
-    drop_columns = [col_name for col_name in df.columns if "__feature__" not in col_name]
-    return df.drop(columns=drop_columns)
+def remove_non_inputs(input_mode, df):
+    match input_mode:
+        case 'features':
+            drop_columns = [col_name for col_name in df.columns if "__feature__" not in col_name]
+            return df.drop(columns=drop_columns)
+        
+        case 'images':
+            return df['path']
 
 def pn_test_split(
         df,
         reliable_positive_fn,
         positive_fn,
         test_frac,
+        input_mode,
         random_state=1234):
     
     rng = np.random.default_rng(seed=random_state)
@@ -45,11 +51,11 @@ def pn_test_split(
     df_train_positive = df[df.apply(lambda x: reliable_positive_fn(x, df), axis=1)]
     df_train_unlabeled = df[df.apply(negate(lambda x: reliable_positive_fn(x, df)), axis=1)]
 
-    positive_data = drop_not_features(df_train_positive).to_numpy()
-    unlabeled_data = drop_not_features(df_train_unlabeled).to_numpy()
+    positive_data = remove_non_inputs(input_mode, df_train_positive).to_numpy()
+    unlabeled_data = remove_non_inputs(input_mode, df_train_unlabeled).to_numpy()
 
-    test_positive_data = drop_not_features(df_test_positive).to_numpy()
-    test_negative_data = drop_not_features(df_test_negative).to_numpy()
+    test_positive_data = remove_non_inputs(input_mode, df_test_positive).to_numpy()
+    test_negative_data = remove_non_inputs(input_mode, df_test_negative).to_numpy()
     X_test = np.concatenate([test_positive_data, test_negative_data])
     y_test = np.concatenate([np.ones(len(test_positive_data)), np.zeros(len(test_negative_data))])
 
@@ -64,6 +70,7 @@ def build_pu_data(
         test_frac,
         reliable_positive_fn,
         positive_fn,
+        input_mode,
         random_state=1234):
     '''
     Divide given positive and unlabeled data into train and test splits
@@ -78,6 +85,7 @@ def build_pu_data(
     test_frac: fraction of data to keep as test set (positives and negatives)
     reliable_positive_fn: bool function that determines if an example is positive (True) or unlabeled (False)
     positive_fn: bool function that determines if an example is positive (True) or negative (False)
+    input_mode: string (either 'features' for feature models, or 'image' for image models)
     random_state: seed for random splitting
 
     "test_split_positive" can be 'same', which keeps the original proportion of positive VS unlabeled data in the 
@@ -87,7 +95,7 @@ def build_pu_data(
     -------
     The dataset of positive and unlabeled examples
     '''
-    positive_data, unlabeled_data, X_test, y_test, y_test_pu = pn_test_split(data, reliable_positive_fn, positive_fn, test_frac, random_state)
+    positive_data, unlabeled_data, X_test, y_test, y_test_pu = pn_test_split(data, reliable_positive_fn, positive_fn, test_frac, input_mode, random_state)
     rng = np.random.default_rng(seed=random_state)
 
     # Compute image amounts on each partition
@@ -110,17 +118,6 @@ def build_pu_data(
     known_positive_amount = int(remaining_positive_amount * (1.0 - move_to_unlabeled_frac))
     positive_in_unlabeled_amount = int(remaining_positive_amount * move_to_unlabeled_frac)
     unlabeled_amount = remaining_unlabeled_amount + positive_in_unlabeled_amount
-
-    print(f'Total amount: {total_amount}')
-    print(f'Validation amount: {val_amount}')
-    print(f'Val_positive amount: {val_positive_amount}')
-    print(f'Val_unlabeled amount: {val_unlabeled_amount}')
-    print(f'Train amount: {remaining_positive_amount + remaining_unlabeled_amount}')
-    print(f'Known_positive amount: {known_positive_amount}')
-    print(f'Unlabeled_amount: {unlabeled_amount}')
-
-    print(f'Size of positive paths: {len(positive_data)}')
-    print(f'Size of unlabeled paths: {len(unlabeled_data)}')
 
     # Build test split from positive and unlabeled images
     X_val_idxs = rng.choice(len(positive_data), size=val_positive_amount, replace=False)
