@@ -70,6 +70,7 @@ def ava_splits(features_dict, extractor, quantile):
         reliable_positive_fn=lambda row, df: row['VotesMean'] > quantile,
         positive_fn=lambda row, df: row['VotesMean'] >= 5.0,
         test_frac=0.2,
+        input_mode='features',
         random_state=1234
     )
 
@@ -89,6 +90,7 @@ def aadb_splits(features_dict, extractor, quantile):
         reliable_positive_fn=lambda row, df: row['label'] > quantile,
         positive_fn=lambda row, df: row['label'] >= 0.5,
         test_frac=0,
+        input_mode='features',
         random_state=1234
     )
 
@@ -101,6 +103,7 @@ def aadb_splits(features_dict, extractor, quantile):
         reliable_positive_fn=lambda row, df: row['label'] > quantile,
         positive_fn=lambda row, df: row['label'] >= 0.5,
         test_frac=0,
+        input_mode='features',
         random_state=1234
     )
 
@@ -109,6 +112,7 @@ def aadb_splits(features_dict, extractor, quantile):
         lambda row, df: row['label'] > quantile, 
         lambda row, df: row['label'] >= 0.5, 
         1.0, 
+        input_mode='features',
         random_state=1234
     )
 
@@ -127,6 +131,7 @@ def laion_splits(features_dict, extractor, quantile):
         reliable_positive_fn=lambda row, df: row['AESTHETIC_SCORE'] > quantile,
         positive_fn=lambda row, df: row['AESTHETIC_SCORE'] >= quantile,
         test_frac=0.2,
+        input_mode='features',
         random_state=1234
     )
 
@@ -150,7 +155,8 @@ def full_ava_test(features_dict, extractor, quantile):
         features, 
         lambda row, df: row['VotesMean'] > quantile, 
         lambda row, df: row['VotesMean'] >= 5.0, 
-        1.0, 
+        1.0,
+        input_mode='features',
         random_state=1234
     )
     
@@ -167,7 +173,8 @@ def full_aadb_test(features_dict, extractor, quantile):
         features, 
         lambda row, df: row['label'] > quantile, 
         lambda row, df: row['label'] >= 0.5, 
-        1.0, 
+        1.0,
+        input_mode='features',
         random_state=1234
     )
     
@@ -230,20 +237,20 @@ def create_probtagging(knn_num_samples, classifier_class, num_classifiers, cls_a
         verbose=True
     )
 
-def create_classifer(cls_name):
+def create_classifer(cls_name, subclassifier=None, subclassifier_kwargs=None, prior=0.7):
     match cls_name:
         case 'tsa':
             return create_iterative(
                 KNNDetector(frac=0.1, k=15),
-                LogisticRegression,
-                {'max_iter':10000, 'n_jobs':-1, 'random_state':1234}
+                subclassifier,
+                subclassifier_kwargs
             )
         
         # Using the MNIST setup from the paper causes it to severely overfit
         case 'nnpu':
             return create_mlp_nnpu_from_layer_sizes(
                 [1],
-                0.7,
+                prior,
                 tf.keras.losses.BinaryCrossentropy(),
                 {'optimizer': tf.keras.optimizers.Adam()},
                 {'epochs': 200, 'callbacks': [tf.keras.callbacks.ReduceLROnPlateau()]}
@@ -262,85 +269,96 @@ def create_classifer(cls_name):
         case 'logistic':
             return LogisticRegression(max_iter=10000, n_jobs=-1, random_state=1234)
         
+        case 'knn-5':
+            return KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
+        
+        case 'knn-9':
+            return KNeighborsClassifier(n_neighbors=9, n_jobs=-1)
+        
+        case 'knn-19':
+            return KNeighborsClassifier(n_neighbors=19, n_jobs=-1)
+        
+        case 'nb':
+            return GaussianNB()
+        
+        case 'svm':
+            return CalibratedClassifierCV(estimator=LinearSVC(max_iter=10000, dual='auto', random_state=1234))
+
         case 'rf':
-            return RandomForestClassifier()
+            return RandomForestClassifier(random_state=1234)
         
         case 'hgbc':
             return HistGradientBoostingClassifier(random_state=1234)
 
 def run_experiment(features, train_ds_func, test_ds_func, exp_name, percentiles, train_relpos, test_relpos, cls_names):
-    extractor_col, reliablepos_col, classifier_col, detector_col, bal_acc_col, acc_col, f1_col, cmat_col = [], [], [], [], [], [], [], []
+    reliablepos_col, classifier_col, subclass_col, prior_col  = [], [], [], []
+    bal_acc_col, acc_col, f1_col, cmat_col = [], [], [], []
     y_true_col, y_true_pu_col, y_pred_col = [], [], []
-
-    old_df = None
 
     exp_file = f"{exp_name}_results.csv"
     if os.path.exists(exp_file):
-        old_df = pd.read_csv(exp_file)
+        return
     
     for real_percentile, train_thresh, test_thresh in zip(percentiles, train_relpos, test_relpos):
         for cls in cls_names:
-            # If there is an entry for this experiment in the dataframe, just compute its metrics
-            entry_exists = (
-                old_df is not None and
-                not old_df[
-                    (old_df['percentile_threshold'] == (str(real_percentile) if percentiles[0] == 'pn' else real_percentile)) &
-                    (old_df['classifier'] == cls)
-                ].empty
-            )
 
-            X_train, X_val, _, y_train, y_val, _, _ = train_ds_func(features, 'clip-ViT-L-14', train_thresh)
-            _, _, X_test, _, _, y_test, y_test_pu = test_ds_func(features, 'clip-ViT-L-14', test_thresh)
-            
-            if not entry_exists:
-                classifier = create_classifer(cls)
+            # Subclassifiers for TSA. Other algorithms do not have subclassifiers
+            subclassifiers = {'none': (None, None)} if cls != 'tsa' else {
+                'logistic': (LogisticRegression, {'max_iter':10000, 'n_jobs':-1, 'random_state':1234}),
+                'knn-5': (KNeighborsClassifier, {'n_neighbors': 5, 'n_jobs':-1}),
+                'knn-9': (KNeighborsClassifier, {'n_neighbors': 9, 'n_jobs':-1}),
+                'knn-19': (KNeighborsClassifier, {'n_neighbors': 19, 'n_jobs':-1}),
+                'nb': (GaussianNB, {}),
+                'rf': (RandomForestClassifier, {'n_jobs':-1, 'random_state':1234}),
+                'svm': (CalibratedClassifierCV, {'estimator': LinearSVC(max_iter=10000, dual='auto', random_state=1234)})
+            }
 
-                if cls in ['logistic', 'rf', 'hgbc']:
-                    classifier.fit(X_train, y_train)
-                
-                else:
-                    classifier.fit(X_train, y_train, X_val, y_val)
+            # Try different priors for NNPU
+            priors = [0.7] if cls != 'nnpu' else [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] 
 
-                y_pred_proba = classifier.predict_proba(X_test)
-                if (len(y_pred_proba.shape) == 2 and y_pred_proba.shape[1] == 2):
-                    y_pred_proba = y_pred_proba[:,1]
-                y_pred = (y_pred_proba > 0.5).astype(int)
-            
-            else:
-                y_pred_proba_str = (
-                    old_df[
-                        (old_df['percentile_threshold'] == (str(real_percentile) if percentiles[0] == 'pn' else real_percentile)) &
-                        (old_df['classifier'] == cls)
-                    ]
-                )['y_pred'].squeeze()
+            for subclassifier_name in subclassifiers:
+                for prior in priors:
+                    X_train, X_val, _, y_train, y_val, _, _ = train_ds_func(features, 'clip-ViT-L-14', train_thresh)
+                    _, _, X_test, _, _, y_test, y_test_pu = test_ds_func(features, 'clip-ViT-L-14', test_thresh)
+                    subclasifier = subclassifiers[subclassifier_name]
+                    classifier = create_classifer(cls, subclasifier[0], subclasifier[1], prior)
 
-                y_pred_proba = np.fromstring(y_pred_proba_str.replace("[", "").replace("]", ""), sep=',')
-                y_pred = (y_pred_proba > 0.5).astype(int)
-            
-            y_true_col.append(y_test.tolist())
-            y_pred_col.append(y_pred_proba.tolist())
-            y_true_pu_col.append(y_test_pu.tolist())
-            
-            bal_acc = balanced_accuracy_score(y_test, y_pred)
-            acc = accuracy_score(y_test, y_pred)
-            f1 = f1_score(y_test, y_pred)
-            cmat = confusion_matrix(y_test, y_pred)
+                    if cls in ['tsa', 'nnpu']:
+                        classifier.fit(X_train, y_train, X_val, y_val)
+                    
+                    else:
+                        classifier.fit(X_train, y_train)
 
-            extractor_col.append('clip-ViT-L-14')
-            reliablepos_col.append(real_percentile)
-            classifier_col.append(cls)
-            detector_col.append('knn-90')
-            bal_acc_col.append(bal_acc)
-            acc_col.append(acc)
-            f1_col.append(f1)
-            cmat_col.append(cmat.tolist())
-            gc.collect()
+                    y_pred_proba = classifier.predict_proba(X_test)
+                    if (len(y_pred_proba.shape) == 2 and y_pred_proba.shape[1] == 2):
+                        y_pred_proba = y_pred_proba[:,1]
+                    y_pred = (y_pred_proba > 0.5).astype(int)
+
+                    reliablepos_col.append(real_percentile)
+                    classifier_col.append(cls)
+                    subclass_col.append(subclassifier_name)
+                    prior_col.append(prior)
+
+                    bal_acc = balanced_accuracy_score(y_test, y_pred)
+                    acc = accuracy_score(y_test, y_pred)
+                    f1 = f1_score(y_test, y_pred)
+                    cmat = confusion_matrix(y_test, y_pred)
+
+                    bal_acc_col.append(bal_acc)
+                    acc_col.append(acc)
+                    f1_col.append(f1)
+                    cmat_col.append(cmat.tolist())
+
+                    y_true_col.append(y_test.tolist())
+                    y_pred_col.append(y_pred_proba.tolist())
+                    y_true_pu_col.append(y_test_pu.tolist())
+                    gc.collect()
 
     df = pd.DataFrame.from_dict({
-        'extractor': extractor_col,
         'percentile_threshold': reliablepos_col,
         'classifier': classifier_col,
-        'detector': detector_col,
+        'subclassifier': subclass_col,
+        'positive_prior': prior_col,
         'balanced_accuracy': bal_acc_col,
         'accuracy': acc_col,
         'f1': f1_col,
@@ -356,28 +374,28 @@ def run_experiment(features, train_ds_func, test_ds_func, exp_name, percentiles,
 def run_all_experiments(features):
 
     # AVA and AADB quantiles
-    ava_quantiles =  [5.386517, 5.475771, 5.566116, 5.660284, 5.758871, 5.865385, 5.987416, 6.129032, 6.307692, 6.574194]
-    aadb_quantiles = [0.5, 0.55, 0.55, 0.6, 0.6, 0.65, 0.65, 0.7, 0.75, 0.8]
-    laion_quantiles = [6.92, 5.0, 6.515469789505005, 6.532570552825928, 6.551862907409668, 6.57332124710083, 6.5983641147613525, 6.629027462005615, 6.66780834197998, 6.720008182525635, 6.808042287826538]
+    ava_quantiles =  [5.0, 5.386517, 5.475771, 5.566116, 5.660284, 5.758871, 5.865385, 5.987416, 6.129032, 6.307692, 6.574194]
+    aadb_quantiles = [0.5, 0.5, 0.55, 0.55, 0.6, 0.6, 0.65, 0.65, 0.7, 0.75, 0.8]
+    laion_quantiles = [0.0, 5.0, 6.515469789505005, 6.532570552825928, 6.551862907409668, 6.57332124710083, 6.5983641147613525, 6.629027462005615, 6.66780834197998, 6.720008182525635, 6.808042287826538]
 
-    ava_aadb_percentiles = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+    ava_aadb_percentiles = ['pn', '0.5', '0.55', '0.6', '0.65', '0.7', '0.75', '0.8', '0.85', '0.9', '0.95']
     laion_percentiles = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-    classifiers = ['nnpu', 'pt', 'tsa']
-    pn_classifiers = ['logistic', 'hgbc']
+    classifiers = ['tsa', 'nnpu']
+    pn_classifiers = ['logistic', 'knn-5', 'knn-9', 'knn-19', 'nb', 'rf', 'svm']
     
 
     # Baseline, non-LAION experiments
-    run_experiment(features, ava_splits, ava_splits, 'ava_ava_baseline', [5.0] + ava_quantiles, [5.0] + ava_quantiles, pn_classifiers)
-    run_experiment(features, ava_splits, aadb_splits, 'ava_aadb_baseline', [5.0] + ava_quantiles, [0.5] + aadb_quantiles, pn_classifiers)
-    run_experiment(features, aadb_splits, ava_splits, 'aadb_ava_baseline', [0.5] + aadb_quantiles, [5.0] + ava_quantiles, pn_classifiers)
-    run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb_baseline', [0.5] + aadb_quantiles, [0.5] + aadb_quantiles, pn_classifiers)
+    run_experiment(features, ava_splits, ava_splits, 'ava_ava_baseline', ava_aadb_percentiles, ava_quantiles, ava_quantiles, pn_classifiers)
+    run_experiment(features, ava_splits, aadb_splits, 'ava_aadb_baseline', ava_aadb_percentiles, ava_quantiles, aadb_quantiles, pn_classifiers)
+    run_experiment(features, aadb_splits, ava_splits, 'aadb_ava_baseline', ava_aadb_percentiles, aadb_quantiles, ava_quantiles, pn_classifiers)
+    run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb_baseline', ava_aadb_percentiles, aadb_quantiles, aadb_quantiles, pn_classifiers)
 
     # Not-LAION experiments
-    run_experiment(features, ava_splits, ava_splits, 'ava_ava', ava_quantiles, ava_quantiles, classifiers)
-    run_experiment(features, ava_splits, aadb_splits, 'ava_aadb', ava_quantiles, aadb_quantiles, classifiers)
-    run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb', aadb_quantiles, aadb_quantiles, classifiers)
-    run_experiment(features, aadb_splits, ava_splits, 'aadb_ava', aadb_quantiles, ava_quantiles, classifiers)
+    run_experiment(features, ava_splits, ava_splits, 'ava_ava', ava_aadb_percentiles, ava_quantiles, ava_quantiles, classifiers)
+    run_experiment(features, ava_splits, aadb_splits, 'ava_aadb', ava_aadb_percentiles, ava_quantiles, aadb_quantiles, classifiers)
+    run_experiment(features, aadb_splits, aadb_splits, 'aadb_aadb', ava_aadb_percentiles, aadb_quantiles, aadb_quantiles, classifiers)
+    run_experiment(features, aadb_splits, ava_splits, 'aadb_ava', ava_aadb_percentiles, aadb_quantiles, ava_quantiles, classifiers)
     
     # LAION experiments
     #run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
