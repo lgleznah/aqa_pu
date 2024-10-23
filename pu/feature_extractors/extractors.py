@@ -6,6 +6,8 @@ import numpy as np
 try:
     from sentence_transformers import SentenceTransformer
     from PIL import Image, ImageFile
+    from transformers import AutoImageProcessor, AutoModel
+    import torch
     ImageFile.LOAD_TRUNCATED_IMAGES = True
 except:
     pass
@@ -53,7 +55,9 @@ class Extractor(ABC):
         use_cache: whether to reuse or save the features from or into a cache file
         '''
 
-        features_file = os.path.join(self.project_root, 'embeddings', f'{self.experiment_name}_{self.filename}.csv')
+        experiment_name = self.experiment_name.replace("/", "_")
+        filename = self.filename.replace("/", "_")
+        features_file = os.path.join(self.project_root, 'embeddings', f'{experiment_name}_{filename}.csv')
 
         if use_cache and os.path.exists(features_file):
             features = pd.read_pickle(features_file, compression='gzip')
@@ -150,22 +154,20 @@ class ViTExtractor(Extractor):
     extractor_name: name of the ViT to employ, as specified by the SentenceTransformers library
     '''
 
-    def __init__(self, experiment_name, extractor_name='clip-ViT-B-32') -> None:
+    def __init__(self, experiment_name, extractor_name='clip-ViT-B-32', extractor_source='sentence_transformers') -> None:
         super().__init__(experiment_name)
 
         self.filename = f'vit_name_{extractor_name}'
         self.extractor_name = extractor_name
+        self.extractor_source = extractor_source
 
     def _enforce_no_single_pixel(self, image):
         np_image = np.array(image)
         if (np_image.shape[0] == 1 or np_image.shape[1] == 1):
             return Image.fromarray(np.zeros((2,2,3), dtype=np.uint8))
         return image
-
-    def _extract_features(self, images):
-        '''
-        Use the ViT to extract features
-        '''
+    
+    def _sentence_transformers_extractor(self, images):
         extractor = SentenceTransformer(self.extractor_name)
         chunks_positive = list(chunkify(images, 900))
 
@@ -176,3 +178,32 @@ class ViTExtractor(Extractor):
         
         features = np.array(features)
         return features
+    
+    def _transformers_extractor(self, images):
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        processor = AutoImageProcessor.from_pretrained(self.extractor_name)
+        model = AutoModel.from_pretrained(self.extractor_name).to(device)
+        chunks = list(chunkify(images, 200))
+        
+        with torch.no_grad():
+            features = []
+            for chunk in tqdm(chunks):
+                images = [self._enforce_no_single_pixel(Image.open(img).convert("RGB")) for img in chunk]
+                inputs = processor(images=images, return_tensors="pt").to(device)
+                last_hidden_states = model(**inputs).last_hidden_state
+                features_numpy = last_hidden_states[:,0,:].cpu().numpy()
+                features.extend(features_numpy)
+        
+        features = np.array(features)
+        return features
+
+    def _extract_features(self, images):
+        '''
+        Use the ViT model to extract features
+        '''
+        if self.extractor_source == 'sentence_transformers':
+            return self._sentence_transformers_extractor(images)
+        if self.extractor_source == 'transformers':
+            return self._transformers_extractor(images)
+        
+        raise ValueError("Unknown feature extractor source!")

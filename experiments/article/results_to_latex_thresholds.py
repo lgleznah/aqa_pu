@@ -1,7 +1,7 @@
 import sys
 import pandas as pd
 
-def main():
+def main() -> None:
     df = pd.read_csv(f"{sys.argv[1]}_results_full.csv")
     results_latex = (
         df.pivot(index="classifier", columns="percentile_threshold", values="aul")

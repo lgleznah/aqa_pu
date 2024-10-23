@@ -53,8 +53,8 @@ class FullCSVLoader(Loader):
         self.img_root = img_root
         self.path_col = path_col
 
-    def load_data(self):
-        df = pd.read_csv(self.file)
+    def load_data(self, sep=None):
+        df = pd.read_csv(self.file, sep=sep, engine='python')
 
         df[self.path_col] = df[self.path_col].squeeze().apply(lambda path: os.path.join(self.img_root, path))
         return df
