@@ -352,8 +352,8 @@ def run_experiment(features, train_ds_func, test_ds_func, exp_name, percentiles,
 
             for subclassifier_name in subclassifiers:
                 for prior in priors:
-                    X_train, X_val, _, y_train, y_val, _, _ = train_ds_func(features, 'clip-ViT-L-14', train_thresh)
-                    _, _, X_test, _, _, y_test, y_test_pu = test_ds_func(features, 'clip-ViT-L-14', test_thresh)
+                    X_train, X_val, _, y_train, y_val, _, _ = train_ds_func(features, 'facebook/dinov2-giant', train_thresh)
+                    _, _, X_test, _, _, y_test, y_test_pu = test_ds_func(features, 'facebook/dinov2-giant', test_thresh)
                     subclasifier = subclassifiers[subclassifier_name]
                     classifier = create_classifer(cls, subclasifier[0], subclasifier[1], prior)
 
@@ -422,10 +422,10 @@ def run_all_experiments(features):
     
 
     # Baseline, non-LAION experiments
-    run_experiment(features, ava_splits, ava_splits, 'dino_ava_ava_baseline', ava_aadb_percentiles, ava_quantiles, ava_quantiles, pn_classifiers)
-    run_experiment(features, ava_splits, aadb_splits, 'dino_ava_aadb_baseline', ava_aadb_percentiles, ava_quantiles, aadb_quantiles, pn_classifiers)
-    run_experiment(features, aadb_splits, ava_splits, 'dino_aadb_ava_baseline', ava_aadb_percentiles, aadb_quantiles, ava_quantiles, pn_classifiers)
-    run_experiment(features, aadb_splits, aadb_splits, 'dino_aadb_aadb_baseline', ava_aadb_percentiles, aadb_quantiles, aadb_quantiles, pn_classifiers)
+    #run_experiment(features, ava_splits, ava_splits, 'dino_ava_ava_baseline', ava_aadb_percentiles, ava_quantiles, ava_quantiles, pn_classifiers)
+    #run_experiment(features, ava_splits, aadb_splits, 'dino_ava_aadb_baseline', ava_aadb_percentiles, ava_quantiles, aadb_quantiles, pn_classifiers)
+    #run_experiment(features, aadb_splits, ava_splits, 'dino_aadb_ava_baseline', ava_aadb_percentiles, aadb_quantiles, ava_quantiles, pn_classifiers)
+    #run_experiment(features, aadb_splits, aadb_splits, 'dino_aadb_aadb_baseline', ava_aadb_percentiles, aadb_quantiles, aadb_quantiles, pn_classifiers)
 
     # Not-LAION experiments
     run_experiment(features, ava_splits, ava_splits, 'dino_ava_ava', ava_aadb_percentiles, ava_quantiles, ava_quantiles, classifiers)
@@ -434,10 +434,10 @@ def run_all_experiments(features):
     run_experiment(features, aadb_splits, ava_splits, 'dino_aadb_ava', ava_aadb_percentiles, aadb_quantiles, ava_quantiles, classifiers)
     
     # LAION experiments
-    #run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'laion+ava_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
-    #run_experiment(features, get_laion_train_func(ava_splits), aadb_splits, 'laion+ava_aadb', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
-    #run_experiment(features, get_laion_train_func(aadb_splits), ava_splits, 'laion+aadb_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
-    #run_experiment(features, get_laion_train_func(aadb_splits), aadb_splits, 'laion+aadb_aadb', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
+    run_experiment(features, get_laion_train_func(ava_splits), ava_splits, 'dino_laion+ava_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
+    run_experiment(features, get_laion_train_func(ava_splits), aadb_splits, 'dino_laion+ava_aadb', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
+    run_experiment(features, get_laion_train_func(aadb_splits), ava_splits, 'dino_laion+aadb_ava', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
+    run_experiment(features, get_laion_train_func(aadb_splits), aadb_splits, 'dino_laion+aadb_aadb', laion_percentiles, laion_quantiles, [10.0] * len(laion_quantiles), classifiers)
 
     # CIMA experiments
     run_experiment(features, get_cima_train_func(ava_splits), ava_splits, 'dino_cima+ava_ava', cima_percentiles, cima_quantiles, [10.0] * len(cima_quantiles), classifiers)

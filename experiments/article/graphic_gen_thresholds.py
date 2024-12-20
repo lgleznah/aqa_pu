@@ -4,10 +4,12 @@ sys.path.append("../..")
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 from pu.metrics import aul_pu
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
+from matplotlib.transforms import Bbox
 
 import matplotlib
 matplotlib.rcParams.update({'font.size': 12})
@@ -65,25 +67,29 @@ def plot_tsa_lines(df: pd.DataFrame, df_baseline: pd.DataFrame, metric: str, set
     if metric == "balanced_accuracy":
         ax.axhline(0.5, color='gray', linestyle="--")
 
+    # Setup figure
+    ax.set_ylim([0, 1])
+    ax.set_xlim([0, 9])
+    ax.set_ylabel(metric.capitalize().replace('_', ' '), fontdict={'fontsize': 15})
+    ax.set_xlabel("Score percentile threshold", fontdict={'fontsize': 15})
+    ax.set_xticks(x)
+    ax.set_xticklabels(xticklabels)
+    ax.set_title(f"{setting_name.split('_')[0].upper()} train, {setting_name.split('_')[1].upper()} test", fontdict={'fontsize': 20})
+    fig.savefig(f"{setting_name}_tsa_{metric}.pdf", bbox_inches="tight")
+    plt.close()
+
     # Setup legend
-    legend_algorithms = ax.legend(handles=legend_handles, bbox_to_anchor=(0., -0.3, 1., .102), loc='lower left', ncols=7, mode="expand", borderaxespad=0., prop={'size': 8})
-    ax.add_artist(legend_algorithms)
-    
+    fig_legend, ax_legend = plt.subplots(figsize=(6,0.9))
+    legend_algorithms = ax_legend.legend(handles=legend_handles, bbox_to_anchor=(0, 1, 1., .102), ncols=7, mode="expand", borderaxespad=0., prop={'size': 8})
+    ax_legend.add_artist(legend_algorithms)
     scenarios_handles = []
     scenarios_handles.append(Line2D([], [], color='black', linestyle='solid', label='PU (TSA)'))
     scenarios_handles.append(Line2D([], [], color='black', linestyle='dotted', label='PN (U $\\rightarrow$ N)'))
     scenarios_handles.append(Line2D([], [], color='black', linestyle='--', label='PN (Original labels)'))
-    legend_scenarios = ax.legend(handles=scenarios_handles, bbox_to_anchor=(0., -0.37, 1., .102), loc='lower left', ncols=3, mode="expand", borderaxespad=0., prop={'size': 8})
-
-    # Setup figure
-    plt.ylim([0, 1])
-    plt.xlim([0, 9])
-    plt.ylabel(metric.capitalize().replace('_', ' '), fontdict={'fontsize': 15})
-    plt.xlabel("Score percentile threshold", fontdict={'fontsize': 15})
-    ax.set_xticks(x)
-    ax.set_xticklabels(xticklabels)
-    plt.title(f"{setting_name.split('_')[0].upper()} train, {setting_name.split('_')[1].upper()} test", fontdict={'fontsize': 20})
-    plt.savefig(f"{setting_name}_tsa_{metric}.pdf", bbox_extra_artists=(legend_algorithms,legend_scenarios), bbox_inches="tight")
+    legend_scenarios = ax_legend.legend(handles=scenarios_handles, bbox_to_anchor=(0, 0.5, 1., .102), ncols=3, mode="expand", borderaxespad=0., prop={'size': 8})
+    ax_legend.axis('off')
+    fig_legend.tight_layout()
+    fig_legend.savefig(f"{setting_name}_tsa_{metric}_legend.pdf", bbox_extra_artists=(legend_algorithms,legend_scenarios), bbox_inches='tight')
     plt.close()
 
 
@@ -94,6 +100,10 @@ def plot_nnpu_heatmap(df: pd.DataFrame, metric: str, setting_name: str) -> None:
 
     ax = sns.heatmap(df_to_plot, annot=True, fmt=".2f", linewidth=.5, vmin=0, vmax=1, cmap='cubehelix')
     ax.invert_yaxis()
+
+    for i in range(len(df_to_plot)):
+        min_col = np.argmax(df_to_plot.iloc[i,:])
+        ax.add_patch(plt.Rectangle((min_col, i), 1, 1, fc='none', ec='black', lw=1, clip_on=False))
 
     ax.set_xlabel(ax.xaxis.get_label().get_text().replace('_', ' ').capitalize())
     ax.set_ylabel(ax.yaxis.get_label().get_text().replace('_', ' ').capitalize())
@@ -110,7 +120,7 @@ def main() -> None:
         df_baseline = pd.read_csv(f"{setting_name}_baseline_results.csv")
 
         # Plot a figure for each metric
-        metrics = ["balanced_accuracy", "accuracy", "f1", "aul"]
+        metrics = ["balanced_accuracy"]#, "accuracy", "f1", "aul"]
         for metric in metrics:
 
             # Plot each algorithm (lines for TSA, heatmap for NNPU)
